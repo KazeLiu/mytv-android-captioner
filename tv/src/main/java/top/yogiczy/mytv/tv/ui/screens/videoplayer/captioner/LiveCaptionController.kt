@@ -66,6 +66,7 @@ class LiveCaptionController(
 
         closeSocket()
         if (active) {
+            showLoadingCaption()
             refreshReadyModels(token)
         } else {
             clearCaptions()
@@ -139,18 +140,24 @@ class LiveCaptionController(
                 CaptionerModelClient.fetch(Configs.captionerServerUrl)
             }.getOrElse {
                 log.w("获取实时字幕模型失败: ${it.message}", it)
+                if (!isTokenActive(token)) return@launch
+                showStatusCaption("字幕模型加载失败")
                 return@launch
             }
 
             if (options.asrModels.isEmpty() || options.translationModels.isEmpty()) {
                 if (options.asrModels.isEmpty() || Configs.captionerTranslationEnabled) {
                     log.w("实时字幕没有可用模型")
+                    if (!isTokenActive(token)) return@launch
+                    showStatusCaption("没有可用字幕模型")
                     return@launch
                 }
             }
 
             if (Configs.captionerTranslationEnabled && options.translationModels.isEmpty()) {
                 log.w("实时字幕没有可用翻译模型")
+                if (!isTokenActive(token)) return@launch
+                showStatusCaption("没有可用翻译模型")
                 return@launch
             }
 
@@ -163,6 +170,10 @@ class LiveCaptionController(
                 modelsReady = true
             }
         }
+    }
+
+    private fun isTokenActive(token: Int): Boolean {
+        return synchronized(lock) { active && token == activeToken }
     }
 
     private fun connectLocked() {
@@ -257,7 +268,9 @@ class LiveCaptionController(
             .appendQueryParameter("sampleRate", TARGET_SAMPLE_RATE.toString())
             .appendQueryParameter("channels", TARGET_CHANNELS.toString())
             .appendQueryParameter("silenceMs", CAPTIONER_SILENCE_MS.toString())
-            .appendQueryParameter("maxSegmentMs", CAPTIONER_MAX_SEGMENT_MS.toString())
+            .appendQueryParameter("maxSegmentMs", Configs.captionerChunkDurationMs.toString())
+            .appendQueryParameter("partialBeamSize", Configs.captionerPartialBeamSize.toString())
+            .appendQueryParameter("finalBeamSize", Configs.captionerFinalBeamSize.toString())
             .appendQueryParameter("chineseScript", Configs.captionerChineseScript)
 
         if (Configs.captionerTranslationEnabled) {
@@ -277,14 +290,23 @@ class LiveCaptionController(
         val root = runCatching { gson.fromJson(text, JsonObject::class.java) }.getOrNull() ?: return
         when (root.get("type")?.asString) {
             "segment" -> handleSegmentMessage(root)
-            "error" -> log.w("实时字幕后端错误: ${root.get("message")?.asString.orEmpty()}")
+            "partial" -> handlePartialMessage(root)
+            "error" -> handleErrorMessage(root)
         }
+    }
+
+    private fun handleErrorMessage(root: JsonObject) {
+        val message = root.stringValue("message").ifBlank { "实时字幕后端错误" }
+        log.w("实时字幕后端错误: $message")
+        showStatusCaption(message)
     }
 
     private fun handleSegmentMessage(root: JsonObject) {
         val segments = root.getAsJsonArray("segments") ?: return
         val messageId = root.stringValue("id").ifBlank { "segment-${System.currentTimeMillis()}" }
         val forced = root.booleanValue("forced")
+        removeLoadingCaption()
+        removePartialCaption(messageId)
 
         segments.forEachIndexed { index, item ->
             val segment = item.asJsonObject
@@ -300,17 +322,95 @@ class LiveCaptionController(
                     sourceText = sourceText,
                     translatedText = translatedText,
                     forced = forced,
+                    partial = false,
                     createdAt = System.currentTimeMillis(),
                 )
             )
         }
     }
 
+    private fun handlePartialMessage(root: JsonObject) {
+        val segments = root.getAsJsonArray("segments") ?: return
+        val finalId = root.stringValue("finalId").ifBlank { root.stringValue("id") }
+            .ifBlank { "segment-${System.currentTimeMillis()}" }
+        val messageId = "partial-$finalId"
+        val sourceText = segments.joinToString(" ") { it.asJsonObject.stringValue("text") }.trim()
+        val translatedText = segments.joinToString(" ") { it.asJsonObject.stringValue("translation") }.trim()
+        if (sourceText.isBlank() && translatedText.isBlank()) return
+
+        removeLoadingCaption()
+        addOrReplaceSubtitleItem(
+            SubtitleItem(
+                id = messageId,
+                start = root.doubleValue("start"),
+                end = root.doubleValue("end"),
+                sourceText = sourceText,
+                translatedText = translatedText,
+                forced = false,
+                partial = true,
+                createdAt = System.currentTimeMillis(),
+            ),
+            scheduleRemoval = false,
+        )
+    }
+
+    private fun showLoadingCaption() {
+        showStatusCaption("正在加载模型")
+    }
+
+    private fun showStatusCaption(text: String) {
+        addOrReplaceSubtitleItem(
+            SubtitleItem(
+                id = LOADING_SUBTITLE_ID,
+                start = 0.0,
+                end = 0.0,
+                sourceText = text,
+                translatedText = "",
+                forced = false,
+                partial = true,
+                createdAt = System.currentTimeMillis(),
+            ),
+            scheduleRemoval = false,
+        )
+    }
+
+    private fun removeLoadingCaption() {
+        val snapshot: List<SubtitleItem>
+        synchronized(lock) {
+            removeSubtitleJobs.remove(LOADING_SUBTITLE_ID)?.cancel()
+            val removed = subtitleQueue.removeAll { it.id == LOADING_SUBTITLE_ID }
+            if (!removed) return
+            snapshot = subtitleQueue.toList()
+        }
+        publishCaptions(snapshot)
+    }
+
+    private fun removePartialCaption(finalId: String) {
+        val snapshot: List<SubtitleItem>
+        synchronized(lock) {
+            val partialId = "partial-$finalId"
+            removeSubtitleJobs.remove(partialId)?.cancel()
+            val removed = subtitleQueue.removeAll { it.id == partialId }
+            if (!removed) return
+            snapshot = subtitleQueue.toList()
+        }
+        publishCaptions(snapshot)
+    }
+
     private fun addSubtitleItem(item: SubtitleItem) {
+        addOrReplaceSubtitleItem(item, scheduleRemoval = true)
+    }
+
+    private fun addOrReplaceSubtitleItem(item: SubtitleItem, scheduleRemoval: Boolean) {
         val snapshot: List<SubtitleItem>
         val token = synchronized(lock) { activeToken }
         synchronized(lock) {
-            subtitleQueue += item
+            val existingIndex = subtitleQueue.indexOfFirst { it.id == item.id }
+            if (existingIndex >= 0) {
+                subtitleQueue[existingIndex] = item
+            } else {
+                subtitleQueue += item
+            }
             while (subtitleQueue.size > MAX_SUBTITLE_ITEMS) {
                 val removed = subtitleQueue.removeAt(0)
                 removeSubtitleJobs.remove(removed.id)?.cancel()
@@ -318,7 +418,9 @@ class LiveCaptionController(
             snapshot = subtitleQueue.toList()
         }
         publishCaptions(snapshot)
-        scheduleSubtitleRemoval(item.id, token)
+        if (scheduleRemoval) {
+            scheduleSubtitleRemoval(item.id, token)
+        }
     }
 
     private fun scheduleSubtitleRemoval(id: String, token: Int) {
@@ -427,6 +529,7 @@ class LiveCaptionController(
         val translatedText: String,
         val forced: Boolean,
         val createdAt: Long,
+        val partial: Boolean = false,
     )
 
     private data class AudioChunk(
@@ -442,7 +545,7 @@ class LiveCaptionController(
         const val TARGET_CHANNELS = 1
         const val PCM_FRAMES_PER_CHUNK = 1024
         const val CAPTIONER_SILENCE_MS = 300
-        const val CAPTIONER_MAX_SEGMENT_MS = 5000
+        const val LOADING_SUBTITLE_ID = "captioner-loading"
         const val MAX_SUBTITLE_ITEMS = 3
         const val MIN_SUBTITLE_DURATION_MS = 3000L
         const val MAX_SUBTITLE_DURATION_MS = 7000L

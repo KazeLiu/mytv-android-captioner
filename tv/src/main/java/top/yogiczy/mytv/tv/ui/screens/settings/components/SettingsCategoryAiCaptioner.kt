@@ -154,6 +154,9 @@ fun SettingsCategoryAiCaptioner(
                 currentDataProvider = { settingsViewModel.captionerAsrModel },
                 dataListProvider = { currentCaptionerModelOptions().asrModels },
                 dataText = { it },
+                horizontal = true,
+                itemMaxLines = 1,
+                itemFillMaxWidth = false,
                 onDataSelected = {
                     settingsViewModel.captionerAsrModel = it
                     visible = false
@@ -220,8 +223,110 @@ fun SettingsCategoryAiCaptioner(
                 currentDataProvider = { settingsViewModel.captionerTranslationModel },
                 dataListProvider = { currentCaptionerModelOptions().translationModels },
                 dataText = { it },
+                horizontal = true,
+                itemMaxLines = 1,
+                itemFillMaxWidth = false,
                 onDataSelected = {
                     settingsViewModel.captionerTranslationModel = it
+                    visible = false
+                    if (settingsViewModel.captionerEnabled) {
+                        context.sendBroadcast(Intent(RESTART_PLAY_ACTION))
+                    }
+                },
+            )
+        }
+
+        item {
+            val popupManager = LocalPopupManager.current
+            val focusRequester = remember { FocusRequester() }
+            var visible by remember { mutableStateOf(false) }
+
+            SettingsListItem(
+                modifier = Modifier.focusRequester(focusRequester),
+                headlineContent = "分段上限",
+                supportingContent = "单段语音最长等待时间，数字越大对后端要求越高，临时字幕可降低体感延迟",
+                trailingContent = settingsViewModel.captionerChunkDurationMs.captionerDurationText(),
+                onSelected = {
+                    popupManager.push(focusRequester, true)
+                    visible = true
+                },
+            )
+
+            SelectDialog(
+                visibleProvider = { visible },
+                onDismissRequest = { visible = false },
+                title = "分段上限",
+                currentDataProvider = { settingsViewModel.captionerChunkDurationMs },
+                dataListProvider = { captionerSegmentDurationOptions },
+                dataText = { it.captionerDurationText() },
+                onDataSelected = {
+                    settingsViewModel.captionerChunkDurationMs = it
+                    visible = false
+                    if (settingsViewModel.captionerEnabled) {
+                        context.sendBroadcast(Intent(RESTART_PLAY_ACTION))
+                    }
+                },
+            )
+        }
+
+        item {
+            val popupManager = LocalPopupManager.current
+            val focusRequester = remember { FocusRequester() }
+            var visible by remember { mutableStateOf(false) }
+
+            SettingsListItem(
+                modifier = Modifier.focusRequester(focusRequester),
+                headlineContent = "临时字幕精度",
+                supportingContent = "先显示的预览字幕，数字越小越快，越大越准但更吃后端",
+                trailingContent = settingsViewModel.captionerPartialBeamSize.captionerBeamSizeText(),
+                onSelected = {
+                    popupManager.push(focusRequester, true)
+                    visible = true
+                },
+            )
+
+            SelectDialog(
+                visibleProvider = { visible },
+                onDismissRequest = { visible = false },
+                title = "临时字幕精度",
+                currentDataProvider = { settingsViewModel.captionerPartialBeamSize },
+                dataListProvider = { captionerBeamSizeOptions },
+                dataText = { it.captionerBeamSizeText() },
+                onDataSelected = {
+                    settingsViewModel.captionerPartialBeamSize = it
+                    visible = false
+                    if (settingsViewModel.captionerEnabled) {
+                        context.sendBroadcast(Intent(RESTART_PLAY_ACTION))
+                    }
+                },
+            )
+        }
+
+        item {
+            val popupManager = LocalPopupManager.current
+            val focusRequester = remember { FocusRequester() }
+            var visible by remember { mutableStateOf(false) }
+
+            SettingsListItem(
+                modifier = Modifier.focusRequester(focusRequester),
+                headlineContent = "修正字幕精度",
+                supportingContent = "最终替换临时字幕的结果，数字越大越稳但返回越慢",
+                trailingContent = settingsViewModel.captionerFinalBeamSize.captionerBeamSizeText(),
+                onSelected = {
+                    popupManager.push(focusRequester, true)
+                    visible = true
+                },
+            )
+
+            SelectDialog(
+                visibleProvider = { visible },
+                onDismissRequest = { visible = false },
+                title = "修正字幕精度",
+                currentDataProvider = { settingsViewModel.captionerFinalBeamSize },
+                dataListProvider = { captionerBeamSizeOptions },
+                dataText = { it.captionerBeamSizeText() },
+                onDataSelected = {
+                    settingsViewModel.captionerFinalBeamSize = it
                     visible = false
                     if (settingsViewModel.captionerEnabled) {
                         context.sendBroadcast(Intent(RESTART_PLAY_ACTION))
@@ -259,6 +364,17 @@ private fun captionerChineseScriptText(script: String): String {
         "original" -> "保留原始输出"
         else -> "简体中文"
     }
+}
+
+private val captionerSegmentDurationOptions = listOf(3, 5, 8, 10, 15).map { it.toLong() * 1000 }
+private val captionerBeamSizeOptions = listOf(1, 2, 3, 4, 5)
+
+private fun Long.captionerDurationText(): String {
+    return if (this % 1000L == 0L) "${this / 1000L}秒" else "${this}ms"
+}
+
+private fun Int.captionerBeamSizeText(): String {
+    return "beam $this"
 }
 
 private const val RESTART_PLAY_ACTION = "top.yogiczy.mytv.tv.RESTART_PLAY"

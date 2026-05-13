@@ -284,6 +284,22 @@ class SettingsViewModel : ViewModel() {
             Configs.captionerChunkDurationMs = value
         }
 
+    private var _captionerPartialBeamSize by mutableIntStateOf(Configs.captionerPartialBeamSize)
+    var captionerPartialBeamSize: Int
+        get() = _captionerPartialBeamSize
+        set(value) {
+            _captionerPartialBeamSize = value
+            Configs.captionerPartialBeamSize = value
+        }
+
+    private var _captionerFinalBeamSize by mutableIntStateOf(Configs.captionerFinalBeamSize)
+    var captionerFinalBeamSize: Int
+        get() = _captionerFinalBeamSize
+        set(value) {
+            _captionerFinalBeamSize = value
+            Configs.captionerFinalBeamSize = value
+        }
+
     private var _captionerDisplayDurationMs by mutableLongStateOf(Configs.captionerDisplayDurationMs)
     var captionerDisplayDurationMs: Long
         get() = _captionerDisplayDurationMs
@@ -352,7 +368,7 @@ class SettingsViewModel : ViewModel() {
     var captionerPrimaryFontSize: Int
         get() = _captionerPrimaryFontSize
         set(value) {
-            _captionerPrimaryFontSize = value.coerceIn(16, 48)
+            _captionerPrimaryFontSize = value.coerceIn(12, 50)
             Configs.captionerPrimaryFontSize = _captionerPrimaryFontSize
         }
 
@@ -360,7 +376,7 @@ class SettingsViewModel : ViewModel() {
     var captionerSecondaryFontSize: Int
         get() = _captionerSecondaryFontSize
         set(value) {
-            _captionerSecondaryFontSize = value.coerceIn(12, 36)
+            _captionerSecondaryFontSize = value.coerceIn(12, 50)
             Configs.captionerSecondaryFontSize = _captionerSecondaryFontSize
         }
 
@@ -615,6 +631,8 @@ class SettingsViewModel : ViewModel() {
         _captionerAsrModel = Configs.captionerAsrModel
         _captionerTranslationModel = Configs.captionerTranslationModel
         _captionerChunkDurationMs = Configs.captionerChunkDurationMs
+        _captionerPartialBeamSize = Configs.captionerPartialBeamSize
+        _captionerFinalBeamSize = Configs.captionerFinalBeamSize
         _captionerDisplayDurationMs = Configs.captionerDisplayDurationMs
         _captionerTextColor = Configs.captionerTextColor
         _captionerBackgroundColor = Configs.captionerBackgroundColor

@@ -223,6 +223,10 @@ object HttpServer : Loggable() {
             body.optString("translationModel", Configs.captionerTranslationModel)
         Configs.captionerChunkDurationMs =
             body.optLong("chunkDurationMs", Configs.captionerChunkDurationMs)
+        Configs.captionerPartialBeamSize =
+            body.optInt("partialBeamSize", Configs.captionerPartialBeamSize)
+        Configs.captionerFinalBeamSize =
+            body.optInt("finalBeamSize", Configs.captionerFinalBeamSize)
         Configs.captionerDisplayDurationMs =
             body.optLong("displayDurationMs", Configs.captionerDisplayDurationMs)
         if (Configs.captionerEnabled) {
@@ -308,6 +312,8 @@ object HttpServer : Loggable() {
                         captionerAsrModel = Configs.captionerAsrModel,
                         captionerTranslationModel = Configs.captionerTranslationModel,
                         captionerChunkDurationMs = Configs.captionerChunkDurationMs,
+                        captionerPartialBeamSize = Configs.captionerPartialBeamSize,
+                        captionerFinalBeamSize = Configs.captionerFinalBeamSize,
                         captionerDisplayDurationMs = Configs.captionerDisplayDurationMs,
                     )
                 )
@@ -370,6 +376,8 @@ object HttpServer : Loggable() {
         Configs.captionerAsrModel = configs.captionerAsrModel
         Configs.captionerTranslationModel = configs.captionerTranslationModel
         Configs.captionerChunkDurationMs = configs.captionerChunkDurationMs
+        Configs.captionerPartialBeamSize = configs.captionerPartialBeamSize
+        Configs.captionerFinalBeamSize = configs.captionerFinalBeamSize
         Configs.captionerDisplayDurationMs = configs.captionerDisplayDurationMs
 
         wrapResponse(response).send("success")
@@ -495,5 +503,7 @@ private data class AllSettings(
     val captionerAsrModel: String = "large-v2",
     val captionerTranslationModel: String = "qwen2.5-1.5b-instruct-gguf",
     val captionerChunkDurationMs: Long = 5000,
+    val captionerPartialBeamSize: Int = 1,
+    val captionerFinalBeamSize: Int = 3,
     val captionerDisplayDurationMs: Long = 7000,
 )

@@ -182,8 +182,14 @@ object Configs {
         /** AI字幕 翻译模型 */
         CAPTIONER_TRANSLATION_MODEL,
 
-        /** AI字幕 音频切片时长 */
+        /** AI字幕 分段上限 */
         CAPTIONER_CHUNK_DURATION_MS,
+
+        /** AI字幕 临时字幕搜索宽度 */
+        CAPTIONER_PARTIAL_BEAM_SIZE,
+
+        /** AI字幕 修正字幕搜索宽度 */
+        CAPTIONER_FINAL_BEAM_SIZE,
 
         /** AI字幕 显示时长 */
         CAPTIONER_DISPLAY_DURATION_MS,
@@ -542,10 +548,20 @@ object Configs {
             value.trim().ifBlank { "qwen2.5-1.5b-instruct-gguf" },
         )
 
-    /** AI字幕 音频切片时长 */
+    /** AI字幕 分段上限 */
     var captionerChunkDurationMs: Long
         get() = SP.getLong(KEY.CAPTIONER_CHUNK_DURATION_MS.name, 5000L)
         set(value) = SP.putLong(KEY.CAPTIONER_CHUNK_DURATION_MS.name, value.coerceIn(1000L, 15000L))
+
+    /** AI字幕 临时字幕搜索宽度 */
+    var captionerPartialBeamSize: Int
+        get() = SP.getInt(KEY.CAPTIONER_PARTIAL_BEAM_SIZE.name, 1).coerceIn(1, 5)
+        set(value) = SP.putInt(KEY.CAPTIONER_PARTIAL_BEAM_SIZE.name, value.coerceIn(1, 5))
+
+    /** AI字幕 修正字幕搜索宽度 */
+    var captionerFinalBeamSize: Int
+        get() = SP.getInt(KEY.CAPTIONER_FINAL_BEAM_SIZE.name, 3).coerceIn(1, 5)
+        set(value) = SP.putInt(KEY.CAPTIONER_FINAL_BEAM_SIZE.name, value.coerceIn(1, 5))
 
     /** AI字幕 显示时长 */
     var captionerDisplayDurationMs: Long
@@ -598,12 +614,12 @@ object Configs {
     /** AI字幕 主字幕字号 */
     var captionerPrimaryFontSize: Int
         get() = SP.getInt(KEY.CAPTIONER_PRIMARY_FONT_SIZE.name, 26)
-        set(value) = SP.putInt(KEY.CAPTIONER_PRIMARY_FONT_SIZE.name, value.coerceIn(16, 48))
+        set(value) = SP.putInt(KEY.CAPTIONER_PRIMARY_FONT_SIZE.name, value.coerceIn(12, 50))
 
     /** AI字幕 副字幕字号 */
     var captionerSecondaryFontSize: Int
         get() = SP.getInt(KEY.CAPTIONER_SECONDARY_FONT_SIZE.name, 18)
-        set(value) = SP.putInt(KEY.CAPTIONER_SECONDARY_FONT_SIZE.name, value.coerceIn(12, 36))
+        set(value) = SP.putInt(KEY.CAPTIONER_SECONDARY_FONT_SIZE.name, value.coerceIn(12, 50))
 
     enum class CaptionerTextColor(val value: Int, val label: String) {
         /** 白色 */

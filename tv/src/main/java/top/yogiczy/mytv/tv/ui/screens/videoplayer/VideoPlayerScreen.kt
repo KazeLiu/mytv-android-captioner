@@ -305,6 +305,7 @@ private fun LiveCaptionItem(
 
     val primaryText = item.translatedText.ifBlank { item.sourceText }
     val secondaryText = item.sourceText.takeIf { bilingual && it.isNotBlank() && it != primaryText }
+    val itemTextColor = if (item.partial) textColor.copy(alpha = 0.86f) else textColor
 
     AnimatedVisibility(
         visible = visible,
@@ -323,7 +324,7 @@ private fun LiveCaptionItem(
         ) {
             Text(
                 text = primaryText,
-                color = textColor,
+                color = itemTextColor,
                 fontSize = primaryFontSize.sp,
                 textAlign = textAlign,
                 lineHeight = (primaryFontSize + 6).sp,
@@ -335,7 +336,7 @@ private fun LiveCaptionItem(
             if (secondaryText != null) {
                 Text(
                     text = secondaryText,
-                    color = textColor.copy(alpha = 0.72f),
+                    color = itemTextColor.copy(alpha = 0.72f),
                     fontSize = secondaryFontSize.sp,
                     textAlign = textAlign,
                     lineHeight = (secondaryFontSize + 4).sp,

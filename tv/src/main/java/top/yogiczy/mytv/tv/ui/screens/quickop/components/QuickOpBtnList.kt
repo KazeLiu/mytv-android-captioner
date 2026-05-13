@@ -34,6 +34,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -277,24 +278,32 @@ private fun CaptionerFloatingPanel(
                 },
             )
 
-            CaptionerOptionRow(
-                title = "主字幕",
-                currentValue = settingsViewModel.captionerPrimaryFontSize,
-                options = captionerPrimaryFontSizeOptions,
-                optionText = { "${it}号" },
-                onSelected = {
-                    settingsViewModel.captionerPrimaryFontSize = it
+            CaptionerNumberStepRow(
+                title = "主字幕大小",
+                value = settingsViewModel.captionerPrimaryFontSize,
+                decreaseText = "缩小",
+                increaseText = "变大",
+                onDecrease = {
+                    settingsViewModel.captionerPrimaryFontSize -= CAPTIONER_FONT_SIZE_STEP
+                    onUserAction()
+                },
+                onIncrease = {
+                    settingsViewModel.captionerPrimaryFontSize += CAPTIONER_FONT_SIZE_STEP
                     onUserAction()
                 },
             )
 
-            CaptionerOptionRow(
-                title = "副字幕",
-                currentValue = settingsViewModel.captionerSecondaryFontSize,
-                options = captionerSecondaryFontSizeOptions,
-                optionText = { "${it}号" },
-                onSelected = {
-                    settingsViewModel.captionerSecondaryFontSize = it
+            CaptionerNumberStepRow(
+                title = "副字幕大小",
+                value = settingsViewModel.captionerSecondaryFontSize,
+                decreaseText = "缩小",
+                increaseText = "变大",
+                onDecrease = {
+                    settingsViewModel.captionerSecondaryFontSize -= CAPTIONER_FONT_SIZE_STEP
+                    onUserAction()
+                },
+                onIncrease = {
+                    settingsViewModel.captionerSecondaryFontSize += CAPTIONER_FONT_SIZE_STEP
                     onUserAction()
                 },
             )
@@ -328,6 +337,19 @@ private fun CaptionerFloatingPanel(
                 optionText = { it.captionerDurationText() },
                 onSelected = {
                     settingsViewModel.captionerDisplayDurationMs = it
+                    onUserAction()
+                },
+            )
+
+            CaptionerOptionRow(
+                title = "分段",
+                currentValue = settingsViewModel.captionerChunkDurationMs,
+                options = captionerSegmentDurationOptions,
+                optionText = { it.captionerDurationText() },
+                onSelected = {
+                    settingsViewModel.captionerChunkDurationMs = it
+                    onRestartCaptioner()
+                    Snackbar.show("分段上限已切换为${it.captionerDurationText()}")
                     onUserAction()
                 },
             )
@@ -470,6 +492,39 @@ private fun CaptionerOffsetRow(
 }
 
 @Composable
+private fun CaptionerNumberStepRow(
+    title: String,
+    value: Int,
+    decreaseText: String,
+    increaseText: String,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.fillMaxWidth(0.16f),
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip,
+        )
+
+        CaptionerNumberStepControl(
+            value = value,
+            decreaseText = decreaseText,
+            increaseText = increaseText,
+            onDecrease = onDecrease,
+            onIncrease = onIncrease,
+        )
+    }
+}
+
+@Composable
 private fun CaptionerOffsetControl(
     value: Int,
     decreaseText: String,
@@ -482,19 +537,42 @@ private fun CaptionerOffsetControl(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         CaptionerPanelButton(text = decreaseText, onSelect = onDecrease)
-        Box(
-            modifier = Modifier
-                .width(70.dp)
-                .padding(horizontal = 4.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = value.toString(),
-                textAlign = TextAlign.Center,
-                fontSize = 24.sp,
-            )
-        }
+        CaptionerNumberValue(value = value)
         CaptionerPanelButton(text = increaseText, onSelect = onIncrease)
+    }
+}
+
+@Composable
+private fun CaptionerNumberStepControl(
+    value: Int,
+    decreaseText: String,
+    increaseText: String,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        CaptionerPanelButton(text = decreaseText, onSelect = onDecrease)
+        CaptionerNumberValue(value = value)
+        CaptionerPanelButton(text = increaseText, onSelect = onIncrease)
+    }
+}
+
+@Composable
+private fun CaptionerNumberValue(value: Int) {
+    Box(
+        modifier = Modifier
+            .width(70.dp)
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = value.toString(),
+            textAlign = TextAlign.Center,
+            fontSize = 24.sp,
+        )
     }
 }
 
@@ -556,9 +634,8 @@ private val captionerTargetLanguageOptions = listOf(
     "Russian",
 )
 
+private val captionerSegmentDurationOptions = listOf(3, 5, 8, 10, 15).map { it.toLong() * 1000 }
 private val captionerDisplayDurationOptions = listOf(3, 5, 7, 10, 15).map { it.toLong() * 1000 }
-private val captionerPrimaryFontSizeOptions = listOf(20, 22, 24, 26, 28, 30, 32, 36)
-private val captionerSecondaryFontSizeOptions = listOf(14, 16, 18, 20, 22, 24, 26, 28)
 
 private fun captionerLanguageLabel(language: String): String {
     return when (language.trim().lowercase()) {
@@ -596,6 +673,7 @@ private fun captionerTargetLanguageOption(targetLanguage: String, chineseScript:
 
 private const val RESTART_PLAY_ACTION = "top.yogiczy.mytv.tv.RESTART_PLAY"
 private const val CAPTIONER_OFFSET_STEP_PX = 50
+private const val CAPTIONER_FONT_SIZE_STEP = 2
 private const val CAPTIONER_TARGET_CHINESE_SIMPLIFIED = "ChineseSimplified"
 private const val CAPTIONER_TARGET_CHINESE_TRADITIONAL = "ChineseTraditional"
 
