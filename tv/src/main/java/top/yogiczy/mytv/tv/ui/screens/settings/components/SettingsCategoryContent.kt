@@ -40,6 +40,7 @@ fun SettingsCategoryContent(
             SettingsCategories.FAVORITE -> SettingsCategoryFavorite()
             SettingsCategories.UPDATE -> SettingsCategoryUpdate()
             SettingsCategories.VIDEO_PLAYER -> SettingsCategoryVideoPlayer()
+            SettingsCategories.AI_CAPTIONER -> SettingsCategoryAiCaptioner()
             SettingsCategories.HTTP -> SettingsCategoryHttp()
             SettingsCategories.DEBUG -> SettingsCategoryDebug()
             SettingsCategories.LOG -> SettingsCategoryLog()

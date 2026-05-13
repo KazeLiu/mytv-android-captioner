@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.yogiczy.mytv.tv.ui.screens.settings.SettingsViewModel
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.captioner.LiveCaptionController
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.player.IJKVideoPlayer
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.player.Media3VideoPlayer
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.player.VideoPlayer
@@ -22,7 +23,6 @@ import top.yogiczy.mytv.tv.ui.utils.Configs
 
 @Stable
 class VideoPlayerState(
-    private var instance: VideoPlayer,
     private val settingsViewModel: SettingsViewModel,
     private val context: android.content.Context,
     private val coroutineScope: kotlinx.coroutines.CoroutineScope,
@@ -58,9 +58,24 @@ class VideoPlayerState(
     /** 元数据 */
     var metadata by mutableStateOf(VideoPlayer.Metadata())
 
+    /** AI 字幕 */
+    var captionItems by mutableStateOf<List<LiveCaptionController.SubtitleItem>>(emptyList())
+
+    private val captionController = LiveCaptionController(coroutineScope) {
+        captionItems = it
+    }
+
+    private var instance: VideoPlayer = createVideoPlayer(
+        type = Configs.videoPlayerType,
+        context = context,
+        coroutineScope = coroutineScope,
+        captionController = captionController,
+    )
+
     fun prepare(url: String) {
         currentUrl = url
         error = null
+        captionController.start()
         instance.prepare(url)
     }
 
@@ -77,6 +92,7 @@ class VideoPlayerState(
     }
 
     fun stop() {
+        captionController.stop()
         instance.stop()
     }
 
@@ -116,11 +132,7 @@ class VideoPlayerState(
         settingsViewModel.videoPlayerTypeValue = Configs.videoPlayerType
         settingsViewModel.onVideoPlayerTypeChanged = { type ->
             currentUrl?.let { url ->
-                val newInstance = when (type) {
-                    Configs.VideoPlayerType.IJK -> IJKVideoPlayer(context, coroutineScope)
-                    Configs.VideoPlayerType.MEDIA3 -> Media3VideoPlayer(context, coroutineScope)
-                    else -> IJKVideoPlayer(context, coroutineScope)
-                }
+                val newInstance = createVideoPlayer(type, context, coroutineScope, captionController)
                 
                 // 保存当前播放状态
                 val wasPlaying = isPlaying
@@ -171,6 +183,7 @@ class VideoPlayerState(
     fun release() {
         onReadyListeners.clear()
         onErrorListeners.clear()
+        captionController.stop()
         instance.release()
     }
 }
@@ -184,7 +197,6 @@ fun rememberVideoPlayerState(
     val coroutineScope = rememberCoroutineScope()
     val state = remember {
         VideoPlayerState(
-            IJKVideoPlayer(context, coroutineScope),
             settingsViewModel,
             context,
             coroutineScope,
@@ -198,6 +210,18 @@ fun rememberVideoPlayerState(
     }
 
     return state
+}
+
+private fun createVideoPlayer(
+    type: Configs.VideoPlayerType,
+    context: android.content.Context,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    captionController: LiveCaptionController? = null,
+): VideoPlayer {
+    return when (type) {
+        Configs.VideoPlayerType.IJK -> IJKVideoPlayer(context, coroutineScope)
+        Configs.VideoPlayerType.MEDIA3 -> Media3VideoPlayer(context, coroutineScope, captionController)
+    }
 }
 
 enum class VideoPlayerDisplayMode(

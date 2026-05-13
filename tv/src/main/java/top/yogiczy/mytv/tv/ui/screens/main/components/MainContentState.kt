@@ -33,6 +33,7 @@ import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.screens.settings.SettingsViewModel
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerState
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.rememberVideoPlayerState
+import top.yogiczy.mytv.tv.ui.utils.Configs
 import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -125,7 +126,16 @@ class MainContentState(
                 val receiver = object : BroadcastReceiver() {
                     override fun onReceive(ctx: Context, intent: Intent) {
                         if (intent.action == "top.yogiczy.mytv.tv.RESTART_PLAY") {
-                            changeCurrentChannel(_currentChannel, _currentChannelUrlIdx, _currentPlaybackEpgProgramme)
+                            if (settingsViewModel.videoPlayerType != Configs.videoPlayerType) {
+                                settingsViewModel.videoPlayerType = Configs.videoPlayerType
+                            } else {
+                                changeCurrentChannel(
+                                    _currentChannel,
+                                    _currentChannelUrlIdx,
+                                    _currentPlaybackEpgProgramme,
+                                    force = true,
+                                )
+                            }
                         }
                     }
                 }
@@ -142,7 +152,7 @@ class MainContentState(
         }
 
         videoPlayerState.onReady {
-            settingsViewModel.iptvPlayableHostList += getUrlHost(_currentChannel.urlList[_currentChannelUrlIdx])
+            currentUrlOrNull()?.let { settingsViewModel.iptvPlayableHostList += getUrlHost(it) }
             coroutineScope.launch {
                 val name = _currentChannel.name
                 val urlIdx = _currentChannelUrlIdx
@@ -164,7 +174,7 @@ class MainContentState(
                 return@onError
             }
 
-            settingsViewModel.iptvPlayableHostList -= getUrlHost(_currentChannel.urlList[_currentChannelUrlIdx])
+            currentUrlOrNull()?.let { settingsViewModel.iptvPlayableHostList -= getUrlHost(it) }
 
             if (_currentChannelUrlIdx < _currentChannel.urlList.size - 1) {
                 changeCurrentChannel(_currentChannel, _currentChannelUrlIdx + 1)
@@ -242,6 +252,8 @@ class MainContentState(
     }
 
     private fun getUrlIdx(urlList: List<String>, urlIdx: Int? = null): Int {
+        if (urlList.isEmpty()) return 0
+
         val idx = if (urlIdx == null) settingsViewModel.getIptvChannelUrlIdx(_currentChannel.name)
 //            urlList.indexOfFirst {
 //            settingsViewModel.iptvPlayableHostList.contains(getUrlHost(it))
@@ -255,14 +267,20 @@ class MainContentState(
         channel: Channel,
         urlIdx: Int? = null,
         playbackEpgProgramme: EpgProgramme? = null,
+        force: Boolean = false,
     ) {
-        if (channel == _currentChannel && urlIdx == _currentChannelUrlIdx && playbackEpgProgramme == _currentPlaybackEpgProgramme) return
+        if (
+            !force &&
+            channel == _currentChannel &&
+            urlIdx == _currentChannelUrlIdx &&
+            playbackEpgProgramme == _currentPlaybackEpgProgramme
+        ) return
 
         if (channel == _currentChannel && urlIdx != _currentChannelUrlIdx) {
-            settingsViewModel.iptvPlayableHostList -= getUrlHost(_currentChannel.urlList[_currentChannelUrlIdx])
+            currentUrlOrNull()?.let { settingsViewModel.iptvPlayableHostList -= getUrlHost(it) }
         }
 
-        _isTempChannelScreenVisible = true
+        _isTempChannelScreenVisible = channel.urlList.isNotEmpty()
 
         _currentChannel = channel
         settingsViewModel.iptvLastChannelIdx =
@@ -272,7 +290,12 @@ class MainContentState(
 
         _currentPlaybackEpgProgramme = playbackEpgProgramme
 
-        var url = _currentChannel.urlList[_currentChannelUrlIdx]
+        var url = currentUrlOrNull() ?: run {
+            _isTempChannelScreenVisible = false
+            videoPlayerState.stop()
+            return
+        }
+
         if (_currentPlaybackEpgProgramme != null) {
             val timeFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())
             val query = listOf(
@@ -341,8 +364,14 @@ class MainContentState(
         channel: Channel = _currentChannel,
         urlIdx: Int? = _currentChannelUrlIdx,
     ): Boolean {
+        if (channel.urlList.isEmpty()) return false
+
         val currentUrlIdx = getUrlIdx(channel.urlList, urlIdx)
         return ChannelUtil.urlSupportPlayback(channel.urlList[currentUrlIdx])
+    }
+
+    private fun currentUrlOrNull(): String? {
+        return _currentChannel.urlList.getOrNull(_currentChannelUrlIdx)
     }
 }
 

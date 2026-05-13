@@ -18,6 +18,8 @@ import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.rtsp.RtspMediaSource
 
@@ -29,17 +31,36 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.utils.Logger
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.captioner.CaptionAudioProcessor
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.captioner.LiveAudioCaptureSink
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
 @OptIn(UnstableApi::class)
 class Media3VideoPlayer(
     private val context: Context,
     private val coroutineScope: CoroutineScope,
+    private val audioCaptureSink: LiveAudioCaptureSink? = null,
 ) : VideoPlayer(coroutineScope) {
     private val log = Logger.create(javaClass.simpleName)
 
     private val videoPlayer by lazy {
-        val renderersFactory = DefaultRenderersFactory(context)
+        val renderersFactory = object : DefaultRenderersFactory(context) {
+            override fun buildAudioSink(
+                context: Context,
+                enableFloatOutput: Boolean,
+                enableAudioTrackPlaybackParams: Boolean,
+            ): AudioSink {
+                val builder = DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+
+                audioCaptureSink?.let {
+                    builder.setAudioProcessors(arrayOf(CaptionAudioProcessor(it)))
+                }
+
+                return builder.build()
+            }
+        }
             .setExtensionRendererMode(
                 if (Configs.videoPlayerForceSoftDecode)
                     DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER

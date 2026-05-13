@@ -26,6 +26,7 @@ import top.yogiczy.mytv.core.util.utils.ApkInstaller
 import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.material.SnackbarType
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.captioner.CaptionerModelClient
 import top.yogiczy.mytv.tv.ui.utils.Configs
 import java.io.File
 import java.net.Inet4Address
@@ -69,6 +70,14 @@ object HttpServer : Loggable() {
 
                 server.post("/api/video-player-user-agent/push") { request, response ->
                     handleVideoPlayerUserAgentPush(request, response)
+                }
+
+                server.post("/api/captioner/config") { request, response ->
+                    handleCaptionerConfigPush(request, response, context)
+                }
+
+                server.get("/api/captioner/models") { request, response ->
+                    handleCaptionerModelsGet(request, response)
                 }
 
                 server.get("/api/configs") { _, response ->
@@ -192,6 +201,59 @@ object HttpServer : Loggable() {
         wrapResponse(response).send("success")
     }
 
+    private fun handleCaptionerConfigPush(
+        request: AsyncHttpServerRequest,
+        response: AsyncHttpServerResponse,
+        context: Context,
+    ) {
+        val body = request.getBody<JSONObjectBody>().get()
+
+        Configs.captionerEnabled = body.optBoolean("enabled", Configs.captionerEnabled)
+        Configs.captionerServerUrl = body.optString("serverUrl", Configs.captionerServerUrl)
+        Configs.captionerSourceLanguage =
+            body.optString("sourceLanguage", Configs.captionerSourceLanguage)
+        Configs.captionerTargetLanguage =
+            body.optString("targetLanguage", Configs.captionerTargetLanguage)
+        Configs.captionerChineseScript =
+            body.optString("chineseScript", Configs.captionerChineseScript)
+        Configs.captionerBilingualEnabled =
+            body.optBoolean("bilingualEnabled", Configs.captionerBilingualEnabled)
+        Configs.captionerAsrModel = body.optString("asrModel", Configs.captionerAsrModel)
+        Configs.captionerTranslationModel =
+            body.optString("translationModel", Configs.captionerTranslationModel)
+        Configs.captionerChunkDurationMs =
+            body.optLong("chunkDurationMs", Configs.captionerChunkDurationMs)
+        Configs.captionerDisplayDurationMs =
+            body.optLong("displayDurationMs", Configs.captionerDisplayDurationMs)
+        if (Configs.captionerEnabled) {
+            Configs.videoPlayerType = Configs.VideoPlayerType.MEDIA3
+        }
+
+        context.sendBroadcast(android.content.Intent("top.yogiczy.mytv.tv.RESTART_PLAY"))
+        wrapResponse(response).send("success")
+    }
+
+    private fun handleCaptionerModelsGet(
+        request: AsyncHttpServerRequest,
+        response: AsyncHttpServerResponse,
+    ) {
+        wrapResponse(response).apply {
+            setContentType("application/json")
+
+            runCatching {
+                val serverUrl = request.query.getString("serverUrl")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: Configs.captionerServerUrl
+                CaptionerModelClient.fetchBlocking(serverUrl)
+            }.onSuccess {
+                send(Json { encodeDefaults = true }.encodeToString(it))
+            }.onFailure {
+                code(502)
+                send("""{"message":"${it.message.orEmpty()}"}""")
+            }
+        }
+    }
+
     private fun handleConfigsGet(response: AsyncHttpServerResponse) {
         wrapResponse(response).apply {
             setContentType("application/json")
@@ -237,6 +299,16 @@ object HttpServer : Loggable() {
                         videoPlayerUserAgent = Configs.videoPlayerUserAgent,
                         videoPlayerLoadTimeout = Configs.videoPlayerLoadTimeout,
                         videoPlayerDisplayMode = Configs.videoPlayerDisplayMode,
+                        captionerEnabled = Configs.captionerEnabled,
+                        captionerServerUrl = Configs.captionerServerUrl,
+                        captionerSourceLanguage = Configs.captionerSourceLanguage,
+                        captionerTargetLanguage = Configs.captionerTargetLanguage,
+                        captionerChineseScript = Configs.captionerChineseScript,
+                        captionerBilingualEnabled = Configs.captionerBilingualEnabled,
+                        captionerAsrModel = Configs.captionerAsrModel,
+                        captionerTranslationModel = Configs.captionerTranslationModel,
+                        captionerChunkDurationMs = Configs.captionerChunkDurationMs,
+                        captionerDisplayDurationMs = Configs.captionerDisplayDurationMs,
                     )
                 )
             )
@@ -289,6 +361,16 @@ object HttpServer : Loggable() {
         Configs.videoPlayerUserAgent = configs.videoPlayerUserAgent
         Configs.videoPlayerLoadTimeout = configs.videoPlayerLoadTimeout
         Configs.videoPlayerDisplayMode = configs.videoPlayerDisplayMode
+        Configs.captionerEnabled = configs.captionerEnabled
+        Configs.captionerServerUrl = configs.captionerServerUrl
+        Configs.captionerSourceLanguage = configs.captionerSourceLanguage
+        Configs.captionerTargetLanguage = configs.captionerTargetLanguage
+        Configs.captionerChineseScript = configs.captionerChineseScript
+        Configs.captionerBilingualEnabled = configs.captionerBilingualEnabled
+        Configs.captionerAsrModel = configs.captionerAsrModel
+        Configs.captionerTranslationModel = configs.captionerTranslationModel
+        Configs.captionerChunkDurationMs = configs.captionerChunkDurationMs
+        Configs.captionerDisplayDurationMs = configs.captionerDisplayDurationMs
 
         wrapResponse(response).send("success")
     }
@@ -404,4 +486,14 @@ private data class AllSettings(
     val videoPlayerUserAgent: String = "",
     val videoPlayerLoadTimeout: Long = 0,
     val videoPlayerDisplayMode: VideoPlayerDisplayMode = VideoPlayerDisplayMode.ORIGINAL,
+    val captionerEnabled: Boolean = false,
+    val captionerServerUrl: String = "http://127.0.0.1:8765",
+    val captionerSourceLanguage: String = "auto",
+    val captionerTargetLanguage: String = "Chinese",
+    val captionerChineseScript: String = "simplified",
+    val captionerBilingualEnabled: Boolean = true,
+    val captionerAsrModel: String = "large-v2",
+    val captionerTranslationModel: String = "qwen2.5-1.5b-instruct-gguf",
+    val captionerChunkDurationMs: Long = 5000,
+    val captionerDisplayDurationMs: Long = 7000,
 )

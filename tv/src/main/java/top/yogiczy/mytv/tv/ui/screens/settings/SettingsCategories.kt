@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -29,6 +30,7 @@ enum class SettingsCategories(
     FAVORITE(Icons.Default.Star, "收藏"),
     UPDATE(Icons.Default.Update, "更新"),
     VIDEO_PLAYER(Icons.Default.SmartDisplay, "播放器"),
+    AI_CAPTIONER(Icons.Default.Translate, "AI字幕与翻译"),
     HTTP(Icons.Default.Http, "网络"),
     DEBUG(Icons.Default.BugReport, "调试"),
     LOG(Icons.Default.FormatListNumbered, "日志"),

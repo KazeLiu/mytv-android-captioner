@@ -103,22 +103,24 @@ fun SimplePopup(
     val popupState = LocalPopupState.current
 
     if (visible) {
-        popupState.add(
-            PopupState(
-                key = key,
-                composableReference = {
-                    PopupContent(
-                        modifier = modifier,
-                        visibleProvider = visibleProvider,
-                        onDismissRequest = onDismissRequest,
-                        withBackground = true,
-                        content = content,
-                    )
-                },
-            ),
-        )
+        if (popupState.none { it.key == key }) {
+            popupState.add(
+                PopupState(
+                    key = key,
+                    composableReference = {
+                        PopupContent(
+                            modifier = modifier,
+                            visibleProvider = visibleProvider,
+                            onDismissRequest = onDismissRequest,
+                            withBackground = true,
+                            content = content,
+                        )
+                    },
+                ),
+            )
+        }
     } else {
-        popupState.remove(popupState.find { it.key == key })
+        popupState.removeAll { it.key == key }
     }
 }
 

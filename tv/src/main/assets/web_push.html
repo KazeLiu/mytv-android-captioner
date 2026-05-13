@@ -115,6 +115,64 @@
                         </van-cell>
                     </van-cell-group>
 
+                    <van-cell-group inset title="AI字幕">
+                        <van-cell title="tv-captioner后端">
+                            <template #label>
+                                <van-space class="w-full" direction="vertical" size="small">
+                                    <van-field label="启用" class="!pl-0" input-align="right">
+                                        <template #input>
+                                            <van-switch v-model="captionerConfig.enabled" size="20" />
+                                        </template>
+                                    </van-field>
+
+                                    <van-field label="后端地址" class="!pl-0" placeholder="http://192.168.1.100:8765"
+                                        v-model="captionerConfig.serverUrl" type="textarea" rows="2"
+                                        input-align="right"></van-field>
+
+                                    <van-field label="源语言" class="!pl-0" placeholder="auto / ja / en / zh"
+                                        v-model="captionerConfig.sourceLanguage" input-align="right"></van-field>
+
+                                    <van-field label="目标语言" class="!pl-0" placeholder="none / Chinese"
+                                        v-model="captionerConfig.targetLanguage" input-align="right"></van-field>
+
+                                    <van-field label="中文输出" class="!pl-0" placeholder="simplified / traditional"
+                                        v-model="captionerConfig.chineseScript" input-align="right"></van-field>
+
+                                    <van-field label="双语字幕" class="!pl-0" input-align="right">
+                                        <template #input>
+                                            <van-switch v-model="captionerConfig.bilingualEnabled" size="20" />
+                                        </template>
+                                    </van-field>
+
+                                    <van-field label="ASR模型" class="!pl-0" readonly clickable
+                                        :model-value="captionerConfig.asrModel || '请选择'"
+                                        input-align="right" @click="openCaptionerModelPicker('asr')"></van-field>
+
+                                    <van-field label="翻译模型" class="!pl-0" readonly clickable
+                                        :model-value="captionerConfig.translationModel || '请选择'"
+                                        input-align="right" @click="openCaptionerModelPicker('translation')"></van-field>
+
+                                    <div class="flex justify-end">
+                                        <van-button @click="refreshCaptionerModels" size="small" class="mr-8px">
+                                            刷新模型
+                                        </van-button>
+                                        <van-button @click="pushCaptionerConfig" size="small" type="primary">
+                                            推送字幕配置
+                                        </van-button>
+                                    </div>
+                                </van-space>
+                            </template>
+                        </van-cell>
+                    </van-cell-group>
+
+                    <van-action-sheet v-model:show="captionerModelPicker.visible"
+                        :actions="captionerModelPicker.actions"
+                        :title="captionerModelPicker.title"
+                        cancel-text="取消"
+                        close-on-click-action
+                        @select="selectCaptionerModel">
+                    </van-action-sheet>
+
                     <van-cell-group inset title="调试">
                         <van-cell title="上传apk">
                             <template #extra>
@@ -289,6 +347,133 @@
                     }
                 }
 
+                const captionerConfig = ref({
+                    enabled: false,
+                    serverUrl: 'http://127.0.0.1:8765',
+                    sourceLanguage: 'auto',
+                    targetLanguage: 'Chinese',
+                    chineseScript: 'simplified',
+                    bilingualEnabled: true,
+                    asrModel: 'large-v2',
+                    translationModel: 'qwen2.5-1.5b-instruct-gguf',
+                })
+                const captionerModelOptions = ref({
+                    asrModels: [],
+                    translationModels: [],
+                })
+                const captionerModelPicker = ref({
+                    visible: false,
+                    type: 'asr',
+                    title: '选择ASR模型',
+                    actions: [],
+                })
+                async function refreshConfigs() {
+                    try {
+                        const configs = await (await requestApi('/api/configs')).json()
+                        captionerConfig.value = {
+                            enabled: !!configs.captionerEnabled,
+                            serverUrl: configs.captionerServerUrl || captionerConfig.value.serverUrl,
+                            sourceLanguage: configs.captionerSourceLanguage || 'auto',
+                            targetLanguage: configs.captionerTargetLanguage || 'Chinese',
+                            chineseScript: configs.captionerChineseScript || 'simplified',
+                            bilingualEnabled: configs.captionerBilingualEnabled !== false,
+                            asrModel: configs.captionerAsrModel || 'large-v2',
+                            translationModel: configs.captionerTranslationModel || 'qwen2.5-1.5b-instruct-gguf',
+                        }
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+                function uniqueModels(models) {
+                    const result = []
+                    ;(models || []).forEach((model) => {
+                        if (model && !result.includes(model)) result.push(model)
+                    })
+                    return result
+                }
+                function ensureCaptionerModelSelected() {
+                    if (
+                        captionerModelOptions.value.asrModels.length > 0 &&
+                        !captionerModelOptions.value.asrModels.includes(captionerConfig.value.asrModel)
+                    ) {
+                        captionerConfig.value.asrModel = captionerModelOptions.value.asrModels[0]
+                    }
+                    if (
+                        captionerModelOptions.value.translationModels.length > 0 &&
+                        !captionerModelOptions.value.translationModels.includes(captionerConfig.value.translationModel)
+                    ) {
+                        captionerConfig.value.translationModel = captionerModelOptions.value.translationModels[0]
+                    }
+                }
+                async function refreshCaptionerModels() {
+                    if (!captionerConfig.value.serverUrl) {
+                        vant.showFailToast('请先填写字幕后端地址')
+                        return
+                    }
+
+                    try {
+                        vant.showLoadingToast({ message: '正在获取模型...', forbidClick: true, duration: 0 })
+                        const query = encodeURIComponent(captionerConfig.value.serverUrl)
+                        const models = await (await requestApi(`/api/captioner/models?serverUrl=${query}`)).json()
+                        captionerModelOptions.value = {
+                            asrModels: uniqueModels(models.asrModels),
+                            translationModels: uniqueModels(models.translationModels),
+                        }
+                        ensureCaptionerModelSelected()
+                        vant.closeToast()
+                    } catch (e) {
+                        vant.showFailToast('获取模型失败')
+                        console.error(e)
+                    }
+                }
+                async function openCaptionerModelPicker(type) {
+                    if (
+                        (type === 'asr' && captionerModelOptions.value.asrModels.length === 0) ||
+                        (type === 'translation' && captionerModelOptions.value.translationModels.length === 0)
+                    ) {
+                        await refreshCaptionerModels()
+                    }
+
+                    const models = type === 'asr'
+                        ? captionerModelOptions.value.asrModels
+                        : captionerModelOptions.value.translationModels
+                    if (models.length === 0) return
+
+                    captionerModelPicker.value = {
+                        visible: true,
+                        type,
+                        title: type === 'asr' ? '选择ASR模型' : '选择翻译模型',
+                        actions: models.map((name) => ({ name })),
+                    }
+                }
+                function selectCaptionerModel(action) {
+                    if (captionerModelPicker.value.type === 'asr') {
+                        captionerConfig.value.asrModel = action.name
+                    } else {
+                        captionerConfig.value.translationModel = action.name
+                    }
+                    captionerModelPicker.value.visible = false
+                }
+                async function pushCaptionerConfig() {
+                    if (!captionerConfig.value.serverUrl) {
+                        vant.showFailToast('请填写字幕后端地址')
+                        return
+                    }
+
+                    try {
+                        vant.showLoadingToast({ message: '加载中...', forbidClick: true, duration: 0 })
+                        await requestApi('/api/captioner/config', {
+                            method: "POST",
+                            body: JSON.stringify({ ...captionerConfig.value }),
+                            headers: { 'Content-Type': 'application/json' }
+                        })
+                        vant.showSuccessToast("推送字幕配置成功")
+                    } catch (e) {
+                        vant.showFailToast('推送字幕配置失败')
+                        console.error(e)
+                    }
+                }
+
                 async function uploadApkAfterRead(file) {
                     try {
                         vant.showLoadingToast({ message: '加载中...', forbidClick: true, duration: 0 })
@@ -304,6 +489,8 @@
 
                 onMounted(async () => {
                     await refreshInfo()
+                    await refreshConfigs()
+                    await refreshCaptionerModels()
                 })
 
                 return {
@@ -318,6 +505,12 @@
                     pushEpgSource,
                     videoPlayerUserAgent,
                     pushVideoPlayerUserAgent,
+                    captionerConfig,
+                    captionerModelPicker,
+                    refreshCaptionerModels,
+                    openCaptionerModelPicker,
+                    selectCaptionerModel,
+                    pushCaptionerConfig,
                     uploadApkAfterRead,
                 }
             }

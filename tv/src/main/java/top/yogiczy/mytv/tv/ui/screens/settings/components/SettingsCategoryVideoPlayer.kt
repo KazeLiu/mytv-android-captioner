@@ -8,16 +8,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.Switch
 import top.yogiczy.mytv.core.util.utils.humanizeMs
 import top.yogiczy.mytv.tv.ui.material.LocalPopupManager
+import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.material.SimplePopup
 import top.yogiczy.mytv.tv.ui.screens.components.SelectDialog
 import top.yogiczy.mytv.tv.ui.screens.settings.SettingsViewModel
 import top.yogiczy.mytv.tv.ui.screens.videoplayerdiaplaymode.VideoPlayerDisplayModeScreen
 import top.yogiczy.mytv.tv.ui.utils.Configs
-import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun SettingsCategoryVideoPlayer(
@@ -25,6 +26,7 @@ fun SettingsCategoryVideoPlayer(
     settingsViewModel: SettingsViewModel = viewModel(),
 ) {
     val context = LocalContext.current
+
     SettingsContentList(modifier) {
         item {
             SettingsListItem(
@@ -145,14 +147,20 @@ fun SettingsCategoryVideoPlayer(
                 headlineContent = "播放器类型",
                 trailingContent = settingsViewModel.getVideoPlayerTypeLabel(settingsViewModel.videoPlayerType),
                 onSelected = {
-                    settingsViewModel.videoPlayerType = if (settingsViewModel.videoPlayerType == Configs.VideoPlayerType.IJK) {
+                    val nextType = if (settingsViewModel.videoPlayerType == Configs.VideoPlayerType.IJK) {
                         Configs.VideoPlayerType.MEDIA3
                     } else {
                         Configs.VideoPlayerType.IJK
                     }
 
+                    if (settingsViewModel.captionerEnabled && nextType == Configs.VideoPlayerType.IJK) {
+                        settingsViewModel.captionerEnabled = false
+                        Snackbar.show("已关闭AI字幕")
+                    }
+                    settingsViewModel.videoPlayerType = nextType
+
                     // 立即重启当前播放，让新引擎生效
-                    context.sendBroadcast(android.content Intent("top.yogiczy.mytv.tv.RESTART_PLAY"))
+                    context.sendBroadcast(android.content.Intent("top.yogiczy.mytv.tv.RESTART_PLAY"))
                 },
             )
         }

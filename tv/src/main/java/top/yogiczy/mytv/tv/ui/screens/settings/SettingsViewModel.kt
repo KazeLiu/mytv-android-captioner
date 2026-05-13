@@ -211,6 +211,164 @@ class SettingsViewModel : ViewModel() {
         Configs.VideoPlayerType.MEDIA3 -> "Media3播放器"
     }
 
+    private var _captionerEnabled by mutableStateOf(Configs.captionerEnabled)
+    var captionerEnabled: Boolean
+        get() = _captionerEnabled
+        set(value) {
+            _captionerEnabled = value
+            Configs.captionerEnabled = value
+        }
+
+    private var _captionerServerUrl by mutableStateOf(Configs.captionerServerUrl)
+    var captionerServerUrl: String
+        get() = _captionerServerUrl
+        set(value) {
+            _captionerServerUrl = value
+            Configs.captionerServerUrl = value
+        }
+
+    private var _captionerSourceLanguage by mutableStateOf(Configs.captionerSourceLanguage)
+    var captionerSourceLanguage: String
+        get() = _captionerSourceLanguage
+        set(value) {
+            Configs.captionerSourceLanguage = value
+            _captionerSourceLanguage = Configs.captionerSourceLanguage
+        }
+
+    private var _captionerTargetLanguage by mutableStateOf(Configs.captionerTargetLanguage)
+    var captionerTargetLanguage: String
+        get() = _captionerTargetLanguage
+        set(value) {
+            Configs.captionerTargetLanguage = value
+            _captionerTargetLanguage = Configs.captionerTargetLanguage
+            _captionerChineseScript = Configs.captionerChineseScript
+        }
+
+    private var _captionerChineseScript by mutableStateOf(Configs.captionerChineseScript)
+    var captionerChineseScript: String
+        get() = _captionerChineseScript
+        set(value) {
+            Configs.captionerChineseScript = value
+            _captionerChineseScript = Configs.captionerChineseScript
+        }
+
+    private var _captionerBilingualEnabled by mutableStateOf(Configs.captionerBilingualEnabled)
+    var captionerBilingualEnabled: Boolean
+        get() = _captionerBilingualEnabled
+        set(value) {
+            _captionerBilingualEnabled = value
+            Configs.captionerBilingualEnabled = value
+        }
+
+    private var _captionerAsrModel by mutableStateOf(Configs.captionerAsrModel)
+    var captionerAsrModel: String
+        get() = _captionerAsrModel
+        set(value) {
+            _captionerAsrModel = value
+            Configs.captionerAsrModel = value
+        }
+
+    private var _captionerTranslationModel by mutableStateOf(Configs.captionerTranslationModel)
+    var captionerTranslationModel: String
+        get() = _captionerTranslationModel
+        set(value) {
+            _captionerTranslationModel = value
+            Configs.captionerTranslationModel = value
+        }
+
+    private var _captionerChunkDurationMs by mutableLongStateOf(Configs.captionerChunkDurationMs)
+    var captionerChunkDurationMs: Long
+        get() = _captionerChunkDurationMs
+        set(value) {
+            _captionerChunkDurationMs = value
+            Configs.captionerChunkDurationMs = value
+        }
+
+    private var _captionerDisplayDurationMs by mutableLongStateOf(Configs.captionerDisplayDurationMs)
+    var captionerDisplayDurationMs: Long
+        get() = _captionerDisplayDurationMs
+        set(value) {
+            _captionerDisplayDurationMs = value
+            Configs.captionerDisplayDurationMs = value
+        }
+
+    private var _captionerTextColor by mutableStateOf(Configs.captionerTextColor)
+    var captionerTextColor: Configs.CaptionerTextColor
+        get() = _captionerTextColor
+        set(value) {
+            _captionerTextColor = value
+            Configs.captionerTextColor = value
+        }
+
+    private var _captionerBackgroundColor by mutableStateOf(Configs.captionerBackgroundColor)
+    var captionerBackgroundColor: Configs.CaptionerBackgroundColor
+        get() = _captionerBackgroundColor
+        set(value) {
+            _captionerBackgroundColor = value
+            Configs.captionerBackgroundColor = value
+        }
+
+    private var _captionerPosition by mutableStateOf(Configs.captionerPosition)
+    var captionerPosition: Configs.CaptionerPosition
+        get() = _captionerPosition
+        set(value) {
+            _captionerPosition = value
+            Configs.captionerPosition = value
+        }
+
+    private var _captionerOffsetX by mutableIntStateOf(Configs.captionerOffsetX)
+    var captionerOffsetX: Int
+        get() = _captionerOffsetX
+        set(value) {
+            _captionerOffsetX = value.coerceIn(-1200, 1200)
+            Configs.captionerOffsetX = _captionerOffsetX
+        }
+
+    private var _captionerOffsetY by mutableIntStateOf(Configs.captionerOffsetY)
+    var captionerOffsetY: Int
+        get() = _captionerOffsetY
+        set(value) {
+            _captionerOffsetY = value.coerceIn(-700, 700)
+            Configs.captionerOffsetY = _captionerOffsetY
+        }
+
+    private var _captionerTextAlign by mutableStateOf(Configs.captionerTextAlign)
+    var captionerTextAlign: Configs.CaptionerTextAlign
+        get() = _captionerTextAlign
+        set(value) {
+            _captionerTextAlign = value
+            Configs.captionerTextAlign = value
+        }
+
+    private var _captionerSingleLineMode by mutableStateOf(Configs.captionerSingleLineMode)
+    var captionerSingleLineMode: Boolean
+        get() = _captionerSingleLineMode
+        set(value) {
+            _captionerSingleLineMode = value
+            Configs.captionerSingleLineMode = value
+        }
+
+    private var _captionerPrimaryFontSize by mutableIntStateOf(Configs.captionerPrimaryFontSize)
+    var captionerPrimaryFontSize: Int
+        get() = _captionerPrimaryFontSize
+        set(value) {
+            _captionerPrimaryFontSize = value.coerceIn(16, 48)
+            Configs.captionerPrimaryFontSize = _captionerPrimaryFontSize
+        }
+
+    private var _captionerSecondaryFontSize by mutableIntStateOf(Configs.captionerSecondaryFontSize)
+    var captionerSecondaryFontSize: Int
+        get() = _captionerSecondaryFontSize
+        set(value) {
+            _captionerSecondaryFontSize = value.coerceIn(12, 36)
+            Configs.captionerSecondaryFontSize = _captionerSecondaryFontSize
+        }
+
+    fun resetCaptionerOffset() {
+        captionerOffsetX = 0
+        captionerOffsetY = 0
+    }
+
     private var _epgEnable by mutableStateOf(Configs.epgEnable)
     var epgEnable: Boolean
         get() = _epgEnable
@@ -447,5 +605,25 @@ class SettingsViewModel : ViewModel() {
         _videoPlayerForceAudioSoftDecode = Configs.videoPlayerForceSoftDecode
         _videoPlayerRenderMode = Configs.videoPlayerRenderMode
         _videoPlayerSkipMultipleFramesOnSameVSync = Configs.videoPlayerSkipMultipleFramesOnSameVSync
+        _videoPlayerType = Configs.videoPlayerType
+        _captionerEnabled = Configs.captionerEnabled
+        _captionerServerUrl = Configs.captionerServerUrl
+        _captionerSourceLanguage = Configs.captionerSourceLanguage
+        _captionerTargetLanguage = Configs.captionerTargetLanguage
+        _captionerChineseScript = Configs.captionerChineseScript
+        _captionerBilingualEnabled = Configs.captionerBilingualEnabled
+        _captionerAsrModel = Configs.captionerAsrModel
+        _captionerTranslationModel = Configs.captionerTranslationModel
+        _captionerChunkDurationMs = Configs.captionerChunkDurationMs
+        _captionerDisplayDurationMs = Configs.captionerDisplayDurationMs
+        _captionerTextColor = Configs.captionerTextColor
+        _captionerBackgroundColor = Configs.captionerBackgroundColor
+        _captionerPosition = Configs.captionerPosition
+        _captionerOffsetX = Configs.captionerOffsetX
+        _captionerOffsetY = Configs.captionerOffsetY
+        _captionerTextAlign = Configs.captionerTextAlign
+        _captionerSingleLineMode = Configs.captionerSingleLineMode
+        _captionerPrimaryFontSize = Configs.captionerPrimaryFontSize
+        _captionerSecondaryFontSize = Configs.captionerSecondaryFontSize
     }
 }
