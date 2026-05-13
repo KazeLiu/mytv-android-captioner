@@ -3,19 +3,35 @@
 <div align="center">
 
 
-![GitHub Repo stars](https://img.shields.io/github/stars/KazeLiu/mytv-android-captioner)
-![GitHub all releases](https://img.shields.io/github/downloads/KazeLiu/mytv-android-captioner/total)
-[![Android Sdk Require](https://img.shields.io/badge/Android-5.0%2B-informational?logo=android)](https://apilevels.com/#:~:text=Jetpack%20Compose%20requires%20a%20minSdk%20of%2021%20or%20higher)
-[![GitHub](https://img.shields.io/github/license/KazeLiu/mytv-android-captioner)](https://github.com/KazeLiu/mytv-android-captioner)
+</div>
+    <p>面向电视直播场景的 AI 字幕增强版，支持实时语音识别、翻译字幕与双语字幕显示。</p>
+
+![AI字幕显示效果](screenshots/字幕截图.jpg)
+
+![双语字幕显示效果](screenshots/双语字幕.jpg)
+
+![AI字幕快捷设置](screenshots/快捷设置.jpg)
+
+![AI字幕设置页面](screenshots/设置页面.jpg)
 
 </div>
-    <p>使用Android原生开发的电视直播软件</p>
 
-<img src="./screenshots/Screenshot_classic_channels.png" width="96%"/>
-<br/>
-<img src="./screenshots/Screenshot_temp_panel.png" width="48%"/>
-<img src="./screenshots/Screenshot_settings.png" width="48%"/>
-</div>
+## AI 字幕
+
+本项目在“我的电视”基础上重点增强了 AI 实时字幕能力，适合新闻、外语频道、无字幕直播源等场景使用。开启后，播放器会采集直播音频并接入 `tv-captioner` 后端，实时生成字幕；也可以开启双语字幕，同时显示原文识别结果和翻译结果。
+
+- 支持实时语音转文字字幕
+- 支持翻译字幕与双语字幕显示
+- 支持简体中文、繁体中文或原始输出格式
+- 支持通过网页配置字幕后端、源语言、目标语言和模型
+- 支持在播放时使用快捷设置开关字幕、双语模式、字号、位置和对齐方式
+- AI 字幕依赖 Media3 播放器，开启后会自动切换到 Media3
+
+### 开启方式
+
+1. 在电视端进入：`设置` > `播放器` > `AI字幕`
+2. 打开设置页最后一项显示的网页地址，通常为：`http://<设备IP>:10481`
+3. 在网页的 `AI字幕` 区域填写 `tv-captioner` 后端地址，选择模型后点击 `推送字幕配置`
 
 ## 使用
 
@@ -91,6 +107,10 @@
 
 ## 功能
 
+- [x] AI实时字幕
+- [x] 双语字幕
+- [x] 字幕后端网页配置
+- [x] 播放快捷字幕设置
 - [x] 换台反转
 - [x] 数字选台
 - [x] 节目单
