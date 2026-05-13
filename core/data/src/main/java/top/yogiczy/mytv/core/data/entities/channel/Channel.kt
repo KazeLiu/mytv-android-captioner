@@ -25,7 +25,7 @@ data class Channel(
     /**
      * 播放地址
      */
-    val urlList: List<String> = listOf("http://1.2.3.4"),
+    val urlList: List<String> = emptyList(),
 
     /**
      * 台标

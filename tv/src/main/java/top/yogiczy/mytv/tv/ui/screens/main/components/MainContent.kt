@@ -82,10 +82,13 @@ fun MainContent(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
                 // 重新走一遍“换台”逻辑，达到刷新目的
-                mainContentState.changeCurrentChannel(
-                    mainContentState.currentChannel,
-                    mainContentState.currentChannelUrlIdx
-                )
+                if (mainContentState.currentChannel.urlList.isNotEmpty()) {
+                    mainContentState.changeCurrentChannel(
+                        mainContentState.currentChannel,
+                        mainContentState.currentChannelUrlIdx,
+                        force = true,
+                    )
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -132,7 +135,11 @@ fun MainContent(
                 onLongSelect = { mainContentState.isQuickOpScreenVisible = true },
                 onSettings = { mainContentState.isQuickOpScreenVisible = true },
                 onLongLeft = { mainContentState.isEpgScreenVisible = true },
-                onLongRight = { mainContentState.isChannelUrlScreenVisible = true },
+                onLongRight = {
+                    if (mainContentState.currentChannel.urlList.isNotEmpty()) {
+                        mainContentState.isChannelUrlScreenVisible = true
+                    }
+                },
                 onLongDown = { mainContentState.isVideoPlayerControllerScreenVisible = true },
                 onNumber = { channelNumberSelectState.input(it) },
             )
@@ -168,9 +175,17 @@ fun MainContent(
             showMetadataProvider = { settingsViewModel.debugShowVideoPlayerMetadata },
         )
 
-        Visible({ ChannelUtil.isHybridWebViewUrl(mainContentState.currentChannel.urlList[mainContentState.currentChannelUrlIdx]) }) {
+        Visible({
+            mainContentState.currentChannel.urlList
+                .getOrNull(mainContentState.currentChannelUrlIdx)
+                ?.let { ChannelUtil.isHybridWebViewUrl(it) } == true
+        }) {
             WebViewScreen(
-                urlProvider = { mainContentState.currentChannel.urlList[mainContentState.currentChannelUrlIdx] },
+                urlProvider = {
+                    mainContentState.currentChannel.urlList
+                        .getOrNull(mainContentState.currentChannelUrlIdx)
+                        .orEmpty()
+                },
                 onVideoResolutionChanged = { width, height ->
                     videoPlayerState.metadata = videoPlayerState.metadata.copy(
                         videoWidth = width,
@@ -268,7 +283,11 @@ fun MainContent(
     ) {
         ChannelUrlScreen(
             channelProvider = { mainContentState.currentChannel },
-            currentUrlProvider = { mainContentState.currentChannel.urlList[mainContentState.currentChannelUrlIdx] },
+            currentUrlProvider = {
+                mainContentState.currentChannel.urlList
+                    .getOrNull(mainContentState.currentChannelUrlIdx)
+                    .orEmpty()
+            },
             onUrlSelected = {
                 mainContentState.isChannelUrlScreenVisible = false
                 mainContentState.changeCurrentChannel(
@@ -352,7 +371,9 @@ fun MainContent(
             },
             onShowChannelUrl = {
                 mainContentState.isQuickOpScreenVisible = false
-                mainContentState.isChannelUrlScreenVisible = true
+                if (mainContentState.currentChannel.urlList.isNotEmpty()) {
+                    mainContentState.isChannelUrlScreenVisible = true
+                }
             },
             onShowVideoPlayerController = {
                 mainContentState.isQuickOpScreenVisible = false

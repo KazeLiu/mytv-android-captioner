@@ -117,7 +117,7 @@ private fun ChannelInfoTags(
 ) {
     val channel = channelProvider()
     val channelLineIdx = channelLineIdxProvider()
-    val line = channel.urlList[channelLineIdx]
+    val line = channel.urlList.getOrNull(channelLineIdx)
     val isInTimeShift = isInTimeShiftProvider()
     val currentPlaybackEpgProgramme = currentPlaybackEpgProgrammeProvider()
     val playerMetadata = playerMetadataProvider()
@@ -143,10 +143,12 @@ private fun ChannelInfoTags(
             Tag("${channelLineIdx + 1}/${channel.urlList.size}", colors = tagColors)
         }
 
-        if (ChannelUtil.isHybridWebViewUrl(line)) {
-            Tag(ChannelUtil.getHybridWebViewUrlProvider(line), colors = tagColors)
-        } else {
-            if (line.isIPv6()) Tag("IPv6", colors = tagColors)
+        if (line != null) {
+            if (ChannelUtil.isHybridWebViewUrl(line)) {
+                Tag(ChannelUtil.getHybridWebViewUrlProvider(line), colors = tagColors)
+            } else {
+                if (line.isIPv6()) Tag("IPv6", colors = tagColors)
+            }
         }
 
         if (playerMetadata.videoWidth * playerMetadata.videoHeight > 0) {

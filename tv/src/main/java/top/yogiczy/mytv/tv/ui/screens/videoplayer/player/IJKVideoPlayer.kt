@@ -33,6 +33,9 @@ class IJKVideoPlayer(
     // 用于确保底层播放器方法的调用是串行的，防止并发导致的 JNI 层崩溃
     private val playerMutex = Mutex()
 
+    private val ijkNetworkTimeoutUs: Long
+        get() = Configs.videoPlayerLoadTimeout * 1000L
+
     private val ijkPlayer by lazy {
         IjkMediaPlayer().apply {
             //            IjkMediaPlayer.native_setLogLevel(IjkMediaPlayer.IJK_LOG_INFO)
@@ -43,8 +46,9 @@ class IJKVideoPlayer(
             setOption(
                 IjkMediaPlayer.OPT_CATEGORY_FORMAT,
                 "timeout",
-                Configs.videoPlayerLoadTimeout
+                ijkNetworkTimeoutUs
             )
+            setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "rw_timeout", ijkNetworkTimeoutUs)
             setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100L)
             setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzedduration", 1)
             setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
@@ -95,6 +99,7 @@ class IJKVideoPlayer(
         IMediaPlayer.OnCompletionListener {
         
         override fun onPrepared(mp: IMediaPlayer?) {
+            retryCount = 0
             triggerPrepared()
             triggerReady()
             
@@ -119,8 +124,9 @@ class IJKVideoPlayer(
         
         override fun onError(mp: IMediaPlayer?, what: Int, extra: Int): Boolean {
             log.e("onError what=$what extra=$extra")
-            // -110 ETIMEDOUT  -138 ENOSYS  均做二次重试
-            if ((what == -110 || what == -138) && retryCount < MAX_RETRY_COUNT) {
+            // -10000 是 IJK 的泛化错误，底层网络/探测/解码错误都可能被包装成它。
+            // -110 ETIMEDOUT、-138 ENOSYS、-1004 IO 也常见于直播源瞬时不可用，先短重试。
+            if ((what == -10000 || what == -110 || what == -138 || what == IMediaPlayer.MEDIA_ERROR_IO) && retryCount < MAX_RETRY_COUNT) {
                 retryCount++
                 coroutineScope.launch {
                     delay(1500 * retryCount.toLong())
@@ -128,7 +134,7 @@ class IJKVideoPlayer(
                 }
                 return true   // 自己消化掉，不抛到 UI 层
             }
-            triggerError(PlaybackException("IJKPlayerError", what))
+            triggerError(PlaybackException("IJKPlayerError extra=$extra", what))
             return true
         }
         
@@ -176,7 +182,9 @@ class IJKVideoPlayer(
     }
 
     override fun prepare(url: String) {
+        val isNewUrl = currentUrl != url
         currentUrl = url
+        if (isNewUrl) retryCount = 0
         prepareJob?.cancel()
         prepareJob = coroutineScope.launch(Dispatchers.IO) {
             playerMutex.withLock {
@@ -191,7 +199,6 @@ class IJKVideoPlayer(
                     ijkPlayer.setDataSource(context, Uri.parse(url), headers)
                     setOption()
                     ijkPlayer.prepareAsync()
-                    retryCount = 0
                 } catch (e: Exception) {
                     handleError(e)
                 }

@@ -52,6 +52,10 @@ fun VideoPlayerError(
 }
 
 private fun getErrorCodeDesc(error: String): String? {
+    if (error.startsWith("IJKPlayerError")) {
+        return "IJK底层播放失败，通常是源连接超时、流格式异常或解码失败。"
+    }
+
     return when (error.split("(").first()) {
         "UNSUPPORTED_TYPE" -> "不支持的视频类型，请检查视频源。"
         "LOAD_TIMEOUT" -> "加载超时，请检查网络连接或视频源。"

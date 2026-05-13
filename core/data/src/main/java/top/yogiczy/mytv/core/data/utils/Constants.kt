@@ -1,8 +1,6 @@
 package top.yogiczy.mytv.core.data.utils
 
-import top.yogiczy.mytv.core.data.entities.epgsource.EpgSource
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSourceList
-import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
 
 /**
@@ -17,7 +15,7 @@ object Constants {
     /**
      * 应用 代码仓库
      */
-    const val APP_REPO = "https://github.com/minyoad/mytv-android"
+    const val APP_REPO = "https://github.com/KazeLiu/mytv-android-captioner"
 
     /**
      * GitHub加速代理地址
@@ -29,31 +27,7 @@ object Constants {
     /**
      * IPTV直播源
      */
-    val IPTV_SOURCE_LIST = IptvSourceList(
-        listOf(
-            IptvSource(
-                name = "默认直播源 my吧",
-                url = "https://tv.mybacc.com/tv/"
-            ),
-            IptvSource(
-                name = "默认直播源 fanmingming（IPV6）",
-                url = "https://live.fanmingming.cn/tv/m3u/ipv6.m3u",
-            ),
-            IptvSource(
-                name = "默认直播源 冰茶",
-                url = GITHUB_PROXY+"https://raw.githubusercontent.com/ls125781003/tvboxtg/refs/heads/main/%E9%A5%AD%E5%A4%AA%E7%A1%AC/lives/%E5%86%B0%E8%8C%B6.txt",
-            ),
-            IptvSource(
-                name = "默认直播源 yuanzl77（IPV4/IPV6）",
-                url = GITHUB_PROXY+"https://raw.githubusercontent.com/yuanzl77/IPTV/main/live.m3u",
-            ),
-            IptvSource(
-                name = "默认直播源-电影列表",
-                url = "https://iptv-cdn.mybacc.com/list/movies.txt",
-//                url = GITHUB_PROXY+"https://raw.githubusercontent.com/minyoad/my-iptv/refs/heads/master/list/movies.txt",
-            ),
-        )
-    )
+    val IPTV_SOURCE_LIST = IptvSourceList()
 
     /**
      * IPTV源缓存时间（毫秒）
@@ -63,27 +37,7 @@ object Constants {
     /**
      * 节目单来源
      */
-    val EPG_SOURCE_LIST = EpgSourceList(
-        listOf(
-            EpgSource(
-                name = "默认节目单 my吧",
-                url = "https://iptv-cdn.mybacc.com/epg/e.xml.gz",
-            ),
-            EpgSource(
-                name = "默认节目单 老张的EPG",
-                url = "http://epg.51zmt.top:8000/e.xml.gz",
-            ),
-            EpgSource(
-                name = "默认节目单 回看七天",
-                url = "https://e.erw.cc/all.xml.gz",
-            ),
-            EpgSource(
-                name = "默认节目单 mybacc 备用",
-//                url = "https://iptv-cdn.mybacc.com/epg/e.xml.gz",
-                url = GITHUB_PROXY+"https://raw.githubusercontent.com/minyoad/my-iptv/refs/heads/master/epg/e.xml.gz",
-            ),
-        )
-    )
+    val EPG_SOURCE_LIST = EpgSourceList()
 
     /**
      * 频道logo来源

@@ -26,7 +26,7 @@ import java.util.Locale
  * 节目单获取
  */
 class EpgRepository(
-    source: EpgSource,
+    private val source: EpgSource,
 ) : FileCacheRepository("epg-${source.url.hashCode().toUInt().toString(16)}.json") {
     private val log = Logger.create(javaClass.simpleName)
     private val epgXmlRepository = EpgXmlRepository(source.url)
@@ -142,6 +142,8 @@ class EpgRepository(
         filteredChannels: List<String> = emptyList(),
         refreshTimeThreshold: Int,
     ): EpgList = withContext(Dispatchers.Default) {
+        if (source.url.isBlank()) return@withContext EpgList()
+
         try {
 //            if (Calendar.getInstance().get(Calendar.HOUR_OF_DAY) < refreshTimeThreshold) {
 //                log.i("未到时间点，不刷新节目单")

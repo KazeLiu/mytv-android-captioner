@@ -65,6 +65,8 @@ class IptvRepository(
      * 获取直播源分组列表
      */
     suspend fun getChannelGroupList(cacheTime: Long): ChannelGroupList {
+        if (source.url.isBlank()) return ChannelGroupList()
+
         try {
             val sourceData = getOrRefresh(if (source.isLocal) Long.MAX_VALUE else cacheTime) {
                 fetchSource(source.url)
