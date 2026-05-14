@@ -79,6 +79,10 @@ class VideoPlayerState(
         instance.prepare(url)
     }
 
+    fun restartCaptioner() {
+        captionController.start()
+    }
+
     fun play() {
         instance.play()
     }

@@ -182,6 +182,18 @@ object Configs {
         /** AI字幕 翻译模型 */
         CAPTIONER_TRANSLATION_MODEL,
 
+        /** AI字幕 翻译模式 */
+        CAPTIONER_TRANSLATION_MODE,
+
+        /** AI字幕 DeepSeek API地址 */
+        CAPTIONER_DEEPSEEK_API_URL,
+
+        /** AI字幕 DeepSeek API Key */
+        CAPTIONER_DEEPSEEK_API_KEY,
+
+        /** AI字幕 DeepSeek 默认提示词 */
+        CAPTIONER_DEEPSEEK_PROMPT,
+
         /** AI字幕 分段上限 */
         CAPTIONER_CHUNK_DURATION_MS,
 
@@ -548,6 +560,52 @@ object Configs {
             value.trim().ifBlank { "qwen2.5-1.5b-instruct-gguf" },
         )
 
+    /** AI字幕 翻译模式 */
+    enum class CaptionerTranslationMode(val value: String, val label: String) {
+        /** 使用 tv-captioner 本地翻译模型 */
+        LOCAL("local", "本地翻译"),
+
+        /** 使用 DeepSeek 在线翻译 */
+        ONLINE("online", "线上翻译");
+
+        companion object {
+            fun fromValue(value: String): CaptionerTranslationMode {
+                return entries.firstOrNull { it.value == value || it.name == value.uppercase() }
+                    ?: LOCAL
+            }
+        }
+    }
+
+    /** AI字幕 翻译模式 */
+    var captionerTranslationMode: CaptionerTranslationMode
+        get() = CaptionerTranslationMode.fromValue(
+            SP.getString(KEY.CAPTIONER_TRANSLATION_MODE.name, CaptionerTranslationMode.LOCAL.value)
+        )
+        set(value) = SP.putString(KEY.CAPTIONER_TRANSLATION_MODE.name, value.value)
+
+    /** AI字幕 DeepSeek API地址 */
+    var captionerDeepSeekApiUrl: String
+        get() = SP.getString(KEY.CAPTIONER_DEEPSEEK_API_URL.name, "https://api.deepseek.com")
+            .ifBlank { "https://api.deepseek.com" }
+        set(value) = SP.putString(
+            KEY.CAPTIONER_DEEPSEEK_API_URL.name,
+            value.trim().ifBlank { "https://api.deepseek.com" },
+        )
+
+    /** AI字幕 DeepSeek API Key */
+    var captionerDeepSeekApiKey: String
+        get() = SP.getString(KEY.CAPTIONER_DEEPSEEK_API_KEY.name, "")
+        set(value) = SP.putString(KEY.CAPTIONER_DEEPSEEK_API_KEY.name, value.trim())
+
+    /** AI字幕 DeepSeek 默认提示词 */
+    var captionerDeepSeekPrompt: String
+        get() = SP.getString(KEY.CAPTIONER_DEEPSEEK_PROMPT.name, DEFAULT_DEEPSEEK_TRANSLATION_PROMPT)
+            .ifBlank { DEFAULT_DEEPSEEK_TRANSLATION_PROMPT }
+        set(value) = SP.putString(
+            KEY.CAPTIONER_DEEPSEEK_PROMPT.name,
+            value.trim().ifBlank { DEFAULT_DEEPSEEK_TRANSLATION_PROMPT },
+        )
+
     /** AI字幕 分段上限 */
     var captionerChunkDurationMs: Long
         get() = SP.getLong(KEY.CAPTIONER_CHUNK_DURATION_MS.name, 5000L)
@@ -793,4 +851,7 @@ object Configs {
             else -> value
         }
     }
+
+    const val DEFAULT_DEEPSEEK_TRANSLATION_PROMPT =
+        "你是电视实时字幕翻译引擎。请把用户输入翻译成目标语言，输出适合屏幕字幕的自然译文。保留人名、地名、频道名、数字和专有名词；不要解释、不要添加前后缀、不要使用 Markdown、不要输出引号。"
 }

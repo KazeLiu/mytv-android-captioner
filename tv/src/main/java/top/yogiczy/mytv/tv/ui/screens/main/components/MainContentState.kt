@@ -129,12 +129,7 @@ class MainContentState(
                             if (settingsViewModel.videoPlayerType != Configs.videoPlayerType) {
                                 settingsViewModel.videoPlayerType = Configs.videoPlayerType
                             } else {
-                                changeCurrentChannel(
-                                    _currentChannel,
-                                    _currentChannelUrlIdx,
-                                    _currentPlaybackEpgProgramme,
-                                    force = true,
-                                )
+                                videoPlayerState.restartCaptioner()
                             }
                         }
                     }

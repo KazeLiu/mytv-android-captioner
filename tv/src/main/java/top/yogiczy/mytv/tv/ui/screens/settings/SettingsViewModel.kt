@@ -276,6 +276,38 @@ class SettingsViewModel : ViewModel() {
             Configs.captionerTranslationModel = value
         }
 
+    private var _captionerTranslationMode by mutableStateOf(Configs.captionerTranslationMode)
+    var captionerTranslationMode: Configs.CaptionerTranslationMode
+        get() = _captionerTranslationMode
+        set(value) {
+            _captionerTranslationMode = value
+            Configs.captionerTranslationMode = value
+        }
+
+    private var _captionerDeepSeekApiUrl by mutableStateOf(Configs.captionerDeepSeekApiUrl)
+    var captionerDeepSeekApiUrl: String
+        get() = _captionerDeepSeekApiUrl
+        set(value) {
+            _captionerDeepSeekApiUrl = value
+            Configs.captionerDeepSeekApiUrl = value
+        }
+
+    private var _captionerDeepSeekApiKey by mutableStateOf(Configs.captionerDeepSeekApiKey)
+    var captionerDeepSeekApiKey: String
+        get() = _captionerDeepSeekApiKey
+        set(value) {
+            _captionerDeepSeekApiKey = value
+            Configs.captionerDeepSeekApiKey = value
+        }
+
+    private var _captionerDeepSeekPrompt by mutableStateOf(Configs.captionerDeepSeekPrompt)
+    var captionerDeepSeekPrompt: String
+        get() = _captionerDeepSeekPrompt
+        set(value) {
+            _captionerDeepSeekPrompt = value
+            Configs.captionerDeepSeekPrompt = value
+        }
+
     private var _captionerChunkDurationMs by mutableLongStateOf(Configs.captionerChunkDurationMs)
     var captionerChunkDurationMs: Long
         get() = _captionerChunkDurationMs
@@ -630,6 +662,10 @@ class SettingsViewModel : ViewModel() {
         _captionerBilingualEnabled = Configs.captionerBilingualEnabled
         _captionerAsrModel = Configs.captionerAsrModel
         _captionerTranslationModel = Configs.captionerTranslationModel
+        _captionerTranslationMode = Configs.captionerTranslationMode
+        _captionerDeepSeekApiUrl = Configs.captionerDeepSeekApiUrl
+        _captionerDeepSeekApiKey = Configs.captionerDeepSeekApiKey
+        _captionerDeepSeekPrompt = Configs.captionerDeepSeekPrompt
         _captionerChunkDurationMs = Configs.captionerChunkDurationMs
         _captionerPartialBeamSize = Configs.captionerPartialBeamSize
         _captionerFinalBeamSize = Configs.captionerFinalBeamSize
