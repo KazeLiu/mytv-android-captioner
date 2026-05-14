@@ -144,21 +144,11 @@
                                         </template>
                                     </van-field>
 
-                                    <van-field label="翻译方式" class="!pl-0" input-align="right">
-                                        <template #input>
-                                            <van-radio-group v-model="captionerConfig.translationMode" direction="horizontal">
-                                                <van-radio name="local">本地</van-radio>
-                                                <van-radio name="online">线上</van-radio>
-                                            </van-radio-group>
-                                        </template>
-                                    </van-field>
-
                                     <van-field label="ASR模型" class="!pl-0" readonly clickable
                                         :model-value="captionerConfig.asrModel || '请选择'"
                                         input-align="right" @click="openCaptionerModelPicker('asr')"></van-field>
 
-                                    <van-field v-if="captionerConfig.translationMode === 'local'"
-                                        label="翻译模型" class="!pl-0" readonly clickable
+                                    <van-field label="翻译模型" class="!pl-0" readonly clickable
                                         :model-value="captionerConfig.translationModel || '请选择'"
                                         input-align="right" @click="openCaptionerModelPicker('translation')"></van-field>
 
@@ -192,62 +182,6 @@
                     </van-cell-group>
                 </template>
 
-                <template v-else-if="tabActive === 'translation'">
-                    <van-cell-group inset title="翻译">
-                        <template v-if="captionerConfig.translationMode === 'online'">
-                            <van-cell title="DeepSeek-V4-Flash">
-                                <template #label>
-                                    <van-space class="w-full" direction="vertical" size="small">
-                                        <van-field label="API地址" class="!pl-0"
-                                            placeholder="https://api.deepseek.com"
-                                            v-model="captionerConfig.deepSeekApiUrl" type="textarea" rows="2"
-                                            input-align="right"></van-field>
-
-                                        <van-field label="API Key" class="!pl-0"
-                                            placeholder="sk-..." v-model="captionerConfig.deepSeekApiKey"
-                                            type="password" input-align="right"></van-field>
-
-                                        <van-field label="默认提示词" class="!pl-0"
-                                            v-model="captionerConfig.deepSeekPrompt" type="textarea" rows="5"
-                                            :input-align="captionerConfig.deepSeekPrompt ? 'left' : 'right'"></van-field>
-
-                                        <div class="text-gray text-12px">模型固定使用 deepseek-v4-flash</div>
-
-                                        <div class="flex justify-end">
-                                            <van-button @click="testDeepSeekTranslation" size="small" class="mr-8px">
-                                                测试翻译连通性
-                                            </van-button>
-                                            <van-button @click="pushCaptionerConfig" size="small" type="primary">
-                                                保存线上翻译
-                                            </van-button>
-                                        </div>
-                                    </van-space>
-                                </template>
-                            </van-cell>
-                        </template>
-
-                        <template v-else>
-                            <van-cell title="本地翻译">
-                                <template #label>
-                                    <van-space class="w-full" direction="vertical" size="small">
-                                        <van-field label="翻译模型" class="!pl-0" readonly clickable
-                                            :model-value="captionerConfig.translationModel || '请选择'"
-                                            input-align="right" @click="openCaptionerModelPicker('translation')"></van-field>
-                                        <div class="flex justify-end">
-                                            <van-button @click="refreshCaptionerModels" size="small" class="mr-8px">
-                                                刷新模型
-                                            </van-button>
-                                            <van-button @click="pushCaptionerConfig" size="small" type="primary">
-                                                保存本地翻译
-                                            </van-button>
-                                        </div>
-                                    </van-space>
-                                </template>
-                            </van-cell>
-                        </template>
-                    </van-cell-group>
-                </template>
-
                 <template v-else-if="tabActive === 'log'">
                     <van-list>
                         <van-cell v-for="item in info.logHistory" :key="item.time" :label="item.cause">
@@ -270,7 +204,6 @@
 
                 <van-tabbar v-model="tabActive">
                     <van-tabbar-item name="config" icon="tv-o">配置</van-tabbar-item>
-                    <van-tabbar-item name="translation" icon="exchange">翻译</van-tabbar-item>
                     <van-tabbar-item name="log" icon="list-switch">日志</van-tabbar-item>
                 </van-tabbar>
             </template>
@@ -423,10 +356,6 @@
                     bilingualEnabled: true,
                     asrModel: 'large-v2',
                     translationModel: 'qwen2.5-1.5b-instruct-gguf',
-                    translationMode: 'local',
-                    deepSeekApiUrl: 'https://api.deepseek.com',
-                    deepSeekApiKey: '',
-                    deepSeekPrompt: '你是电视实时字幕翻译引擎。请把用户输入翻译成目标语言，输出适合屏幕字幕的自然译文。保留人名、地名、频道名、数字和专有名词；不要解释、不要添加前后缀、不要使用 Markdown、不要输出引号。',
                 })
                 const captionerModelOptions = ref({
                     asrModels: [],
@@ -450,10 +379,6 @@
                             bilingualEnabled: configs.captionerBilingualEnabled !== false,
                             asrModel: configs.captionerAsrModel || 'large-v2',
                             translationModel: configs.captionerTranslationModel || 'qwen2.5-1.5b-instruct-gguf',
-                            translationMode: (configs.captionerTranslationMode || 'local').toLowerCase() === 'online' ? 'online' : 'local',
-                            deepSeekApiUrl: configs.captionerDeepSeekApiUrl || 'https://api.deepseek.com',
-                            deepSeekApiKey: configs.captionerDeepSeekApiKey || '',
-                            deepSeekPrompt: configs.captionerDeepSeekPrompt || captionerConfig.value.deepSeekPrompt,
                         }
                     } catch (e) {
                         console.error(e)
@@ -534,17 +459,6 @@
                         vant.showFailToast('请填写字幕后端地址')
                         return
                     }
-                    const translationEnabled = captionerConfig.value.targetLanguage !== 'none'
-                    if (translationEnabled && captionerConfig.value.translationMode === 'online') {
-                        if (!captionerConfig.value.deepSeekApiUrl) {
-                            vant.showFailToast('请填写DeepSeek API地址')
-                            return
-                        }
-                        if (!captionerConfig.value.deepSeekApiKey) {
-                            vant.showFailToast('请填写DeepSeek API Key')
-                            return
-                        }
-                    }
 
                     try {
                         vant.showLoadingToast({ message: '加载中...', forbidClick: true, duration: 0 })
@@ -556,30 +470,6 @@
                         vant.showSuccessToast("推送字幕配置成功")
                     } catch (e) {
                         vant.showFailToast('推送字幕配置失败')
-                        console.error(e)
-                    }
-                }
-
-                async function testDeepSeekTranslation() {
-                    if (!captionerConfig.value.deepSeekApiUrl) {
-                        vant.showFailToast('请填写DeepSeek API地址')
-                        return
-                    }
-                    if (!captionerConfig.value.deepSeekApiKey) {
-                        vant.showFailToast('请填写DeepSeek API Key')
-                        return
-                    }
-
-                    try {
-                        vant.showLoadingToast({ message: '正在测试翻译...', forbidClick: true, duration: 0 })
-                        const resp = await (await requestApi('/api/captioner/deepseek/test', {
-                            method: "POST",
-                            body: JSON.stringify({ ...captionerConfig.value }),
-                            headers: { 'Content-Type': 'application/json' }
-                        })).json()
-                        vant.showSuccessToast(`连通成功：${resp.translation || 'OK'}`)
-                    } catch (e) {
-                        vant.showFailToast('DeepSeek连通失败')
                         console.error(e)
                     }
                 }
@@ -621,7 +511,6 @@
                     openCaptionerModelPicker,
                     selectCaptionerModel,
                     pushCaptionerConfig,
-                    testDeepSeekTranslation,
                     uploadApkAfterRead,
                 }
             }

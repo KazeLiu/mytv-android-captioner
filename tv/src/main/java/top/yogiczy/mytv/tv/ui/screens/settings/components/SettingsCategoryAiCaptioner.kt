@@ -207,42 +207,6 @@ fun SettingsCategoryAiCaptioner(
 
             SettingsListItem(
                 modifier = Modifier.focusRequester(focusRequester),
-                headlineContent = "翻译方式",
-                supportingContent = when (settingsViewModel.captionerTranslationMode) {
-                    Configs.CaptionerTranslationMode.LOCAL -> "使用 tv-captioner 本地翻译模型"
-                    Configs.CaptionerTranslationMode.ONLINE -> "使用 DeepSeek-V4-Flash 在线翻译"
-                },
-                trailingContent = settingsViewModel.captionerTranslationMode.label,
-                onSelected = {
-                    popupManager.push(focusRequester, true)
-                    visible = true
-                },
-            )
-
-            SelectDialog(
-                visibleProvider = { visible },
-                onDismissRequest = { visible = false },
-                title = "翻译方式",
-                currentDataProvider = { settingsViewModel.captionerTranslationMode },
-                dataListProvider = { Configs.CaptionerTranslationMode.entries },
-                dataText = { it.label },
-                onDataSelected = {
-                    settingsViewModel.captionerTranslationMode = it
-                    visible = false
-                    if (settingsViewModel.captionerEnabled) {
-                        context.sendBroadcast(Intent(RESTART_PLAY_ACTION))
-                    }
-                },
-            )
-        }
-
-        if (settingsViewModel.captionerTranslationMode == Configs.CaptionerTranslationMode.LOCAL) item {
-            val popupManager = LocalPopupManager.current
-            val focusRequester = remember { FocusRequester() }
-            var visible by remember { mutableStateOf(false) }
-
-            SettingsListItem(
-                modifier = Modifier.focusRequester(focusRequester),
                 headlineContent = "翻译模型",
                 supportingContent = "翻译语言 ${captionerTargetLanguageText(settingsViewModel)}",
                 trailingContent = settingsViewModel.captionerTranslationModel,
@@ -270,31 +234,6 @@ fun SettingsCategoryAiCaptioner(
                     }
                 },
             )
-        }
-
-        if (settingsViewModel.captionerTranslationMode == Configs.CaptionerTranslationMode.ONLINE) item {
-            val popupManager = LocalPopupManager.current
-            val focusRequester = remember { FocusRequester() }
-            var visible by remember { mutableStateOf(false) }
-
-            SettingsListItem(
-                modifier = Modifier.focusRequester(focusRequester),
-                headlineContent = "线上翻译配置",
-                supportingContent = "扫码打开配置页，填写 DeepSeek API 地址、Key 和提示词",
-                trailingContent = "DeepSeek-V4-Flash",
-                onSelected = {
-                    popupManager.push(focusRequester, true)
-                    visible = true
-                },
-                remoteConfig = true,
-            )
-
-            SimplePopup(
-                visibleProvider = { visible },
-                onDismissRequest = { visible = false },
-            ) {
-                SettingsCategoryPush()
-            }
         }
 
         item {

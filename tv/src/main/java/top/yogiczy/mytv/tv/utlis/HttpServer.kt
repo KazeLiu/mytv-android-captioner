@@ -27,7 +27,6 @@ import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.material.SnackbarType
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.captioner.CaptionerModelClient
-import top.yogiczy.mytv.tv.ui.screens.videoplayer.captioner.DeepSeekTranslationClient
 import top.yogiczy.mytv.tv.ui.utils.Configs
 import java.io.File
 import java.net.Inet4Address
@@ -79,10 +78,6 @@ object HttpServer : Loggable() {
 
                 server.get("/api/captioner/models") { request, response ->
                     handleCaptionerModelsGet(request, response)
-                }
-
-                server.post("/api/captioner/deepseek/test") { request, response ->
-                    handleCaptionerDeepSeekTest(request, response)
                 }
 
                 server.get("/api/configs") { _, response ->
@@ -226,15 +221,6 @@ object HttpServer : Loggable() {
         Configs.captionerAsrModel = body.optString("asrModel", Configs.captionerAsrModel)
         Configs.captionerTranslationModel =
             body.optString("translationModel", Configs.captionerTranslationModel)
-        Configs.captionerTranslationMode = Configs.CaptionerTranslationMode.fromValue(
-            body.optString("translationMode", Configs.captionerTranslationMode.value)
-        )
-        Configs.captionerDeepSeekApiUrl =
-            body.optString("deepSeekApiUrl", Configs.captionerDeepSeekApiUrl)
-        Configs.captionerDeepSeekApiKey =
-            body.optString("deepSeekApiKey", Configs.captionerDeepSeekApiKey)
-        Configs.captionerDeepSeekPrompt =
-            body.optString("deepSeekPrompt", Configs.captionerDeepSeekPrompt)
         Configs.captionerChunkDurationMs =
             body.optLong("chunkDurationMs", Configs.captionerChunkDurationMs)
         Configs.captionerPartialBeamSize =
@@ -268,29 +254,6 @@ object HttpServer : Loggable() {
             }.onFailure {
                 code(502)
                 send("""{"message":"${it.message.orEmpty()}"}""")
-            }
-        }
-    }
-
-    private fun handleCaptionerDeepSeekTest(
-        request: AsyncHttpServerRequest,
-        response: AsyncHttpServerResponse,
-    ) {
-        val body = request.getBody<JSONObjectBody>().get()
-        wrapResponse(response).apply {
-            setContentType("application/json")
-
-            runCatching {
-                DeepSeekTranslationClient.testBlocking(
-                    apiUrl = body.optString("deepSeekApiUrl", Configs.captionerDeepSeekApiUrl),
-                    apiKey = body.optString("deepSeekApiKey", Configs.captionerDeepSeekApiKey),
-                    prompt = body.optString("deepSeekPrompt", Configs.captionerDeepSeekPrompt),
-                )
-            }.onSuccess {
-                send(org.json.JSONObject().put("translation", it).toString())
-            }.onFailure {
-                code(502)
-                send(org.json.JSONObject().put("message", it.message.orEmpty()).toString())
             }
         }
     }
@@ -348,10 +311,6 @@ object HttpServer : Loggable() {
                         captionerBilingualEnabled = Configs.captionerBilingualEnabled,
                         captionerAsrModel = Configs.captionerAsrModel,
                         captionerTranslationModel = Configs.captionerTranslationModel,
-                        captionerTranslationMode = Configs.captionerTranslationMode.value,
-                        captionerDeepSeekApiUrl = Configs.captionerDeepSeekApiUrl,
-                        captionerDeepSeekApiKey = Configs.captionerDeepSeekApiKey,
-                        captionerDeepSeekPrompt = Configs.captionerDeepSeekPrompt,
                         captionerChunkDurationMs = Configs.captionerChunkDurationMs,
                         captionerPartialBeamSize = Configs.captionerPartialBeamSize,
                         captionerFinalBeamSize = Configs.captionerFinalBeamSize,
@@ -416,11 +375,6 @@ object HttpServer : Loggable() {
         Configs.captionerBilingualEnabled = configs.captionerBilingualEnabled
         Configs.captionerAsrModel = configs.captionerAsrModel
         Configs.captionerTranslationModel = configs.captionerTranslationModel
-        Configs.captionerTranslationMode =
-            Configs.CaptionerTranslationMode.fromValue(configs.captionerTranslationMode)
-        Configs.captionerDeepSeekApiUrl = configs.captionerDeepSeekApiUrl
-        Configs.captionerDeepSeekApiKey = configs.captionerDeepSeekApiKey
-        Configs.captionerDeepSeekPrompt = configs.captionerDeepSeekPrompt
         Configs.captionerChunkDurationMs = configs.captionerChunkDurationMs
         Configs.captionerPartialBeamSize = configs.captionerPartialBeamSize
         Configs.captionerFinalBeamSize = configs.captionerFinalBeamSize
@@ -548,10 +502,6 @@ private data class AllSettings(
     val captionerBilingualEnabled: Boolean = true,
     val captionerAsrModel: String = "large-v2",
     val captionerTranslationModel: String = "qwen2.5-1.5b-instruct-gguf",
-    val captionerTranslationMode: String = "local",
-    val captionerDeepSeekApiUrl: String = "https://api.deepseek.com",
-    val captionerDeepSeekApiKey: String = "",
-    val captionerDeepSeekPrompt: String = Configs.DEFAULT_DEEPSEEK_TRANSLATION_PROMPT,
     val captionerChunkDurationMs: Long = 5000,
     val captionerPartialBeamSize: Int = 1,
     val captionerFinalBeamSize: Int = 3,
