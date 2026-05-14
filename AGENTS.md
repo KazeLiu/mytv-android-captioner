@@ -21,5 +21,5 @@ Or run:
 APK output:
 
 ```text
-D:\code\mytv-android-captioner\tv\build\outputs\apk\debug\mytv-android-tv-3.0-all-sdk21.apk
+D:\code\mytv-android-captioner\tv\build\outputs\apk\debug\mytv-android-tv-3.1-all-sdk21.apk
 ```

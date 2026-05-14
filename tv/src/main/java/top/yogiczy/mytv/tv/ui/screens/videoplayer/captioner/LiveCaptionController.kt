@@ -141,35 +141,51 @@ class LiveCaptionController(
             }.getOrElse {
                 log.w("获取实时字幕模型失败: ${it.message}", it)
                 if (!isTokenActive(token)) return@launch
-                showStatusCaption("字幕模型加载失败")
+                disableCaptionerWithStatus("AI字幕已关闭：后端连接失败")
                 return@launch
             }
 
-            if (options.asrModels.isEmpty() || options.translationModels.isEmpty()) {
-                if (options.asrModels.isEmpty() || Configs.captionerTranslationEnabled) {
-                    log.w("实时字幕没有可用模型")
-                    if (!isTokenActive(token)) return@launch
-                    showStatusCaption("没有可用字幕模型")
-                    return@launch
-                }
+            val translationEnabled = Configs.captionerTranslationEnabled
+            val unavailableMessage = when {
+                options.asrModels.isEmpty() -> "AI字幕已关闭：字幕模型不存在"
+                translationEnabled && options.translationModels.isEmpty() -> "AI字幕已关闭：翻译模型不存在"
+                else -> null
             }
-
-            if (Configs.captionerTranslationEnabled && options.translationModels.isEmpty()) {
-                log.w("实时字幕没有可用翻译模型")
+            if (unavailableMessage != null) {
+                log.w("实时字幕模型不可用: $unavailableMessage")
                 if (!isTokenActive(token)) return@launch
-                showStatusCaption("没有可用翻译模型")
+                disableCaptionerWithStatus(unavailableMessage)
                 return@launch
             }
 
             synchronized(lock) {
                 if (!active || token != activeToken) return@launch
-                Configs.captionerAsrModel = options.asrModels.first()
-                if (Configs.captionerTranslationEnabled) {
-                    Configs.captionerTranslationModel = options.translationModels.first()
+                Configs.captionerAsrModel = keepReadyModel(Configs.captionerAsrModel, options.asrModels)
+                if (translationEnabled) {
+                    Configs.captionerTranslationModel = keepReadyModel(
+                        Configs.captionerTranslationModel,
+                        options.translationModels,
+                    )
                 }
                 modelsReady = true
             }
         }
+    }
+
+    private fun keepReadyModel(current: String, readyModels: List<String>): String {
+        val selected = current.trim()
+        return if (selected.isNotBlank() && selected in readyModels) selected else readyModels.first()
+    }
+
+    private fun disableCaptionerWithStatus(message: String) {
+        synchronized(lock) {
+            active = false
+            modelsReady = false
+            sendBuffer.reset()
+        }
+        Configs.captionerEnabled = false
+        closeSocket()
+        showStatusCaption(message)
     }
 
     private fun isTokenActive(token: Int): Boolean {
