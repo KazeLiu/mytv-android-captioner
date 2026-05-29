@@ -80,7 +80,7 @@ private class EpgXmlRepository(private val source: EpgSource) :
 
             try {
                 val t = measureTimedValue {
-                    source.url.request { response, request ->
+                    source.url.request(useLiveProxy = true) { response, request ->
                         val fetcher =
                             EpgFetcher.instances.first { it.isSupport(request.url.toString()) }
                         fetcher.fetch(response.body!!)

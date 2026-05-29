@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.DisplaySettings
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SmartDisplay
+import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.runtime.Composable
@@ -200,6 +201,7 @@ enum class SettingsCategories(
     UI(Icons.Outlined.DisplaySettings, "界面"),
     CONTROL(Icons.Outlined.ControlCamera, "控制"),
     VIDEO_PLAYER(Icons.Outlined.SmartDisplay, "播放器"),
+    AI_CAPTIONER(Icons.Outlined.Subtitles, "AI字幕"),
     UPDATE(Icons.Outlined.Update, "更新"),
 
     // FAVORITE(Icons.Outlined.FavoriteBorder, "收藏"),

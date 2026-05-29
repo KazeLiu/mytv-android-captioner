@@ -44,23 +44,29 @@ suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation 
 
 suspend fun <T> String.request(
     builder: (Request.Builder) -> Request.Builder = { it -> it },
+    useLiveProxy: Boolean = false,
     action: suspend CoroutineScope.(ResponseBody) -> T,
-) = request(builder) { response, _ -> response.body?.let { action(it) } }
+) = request(builder, useLiveProxy) { response, _ -> response.body?.let { action(it) } }
 
 suspend fun <T> String.request(
     builder: (Request.Builder) -> Request.Builder = { it -> it },
+    useLiveProxy: Boolean = false,
     action: suspend CoroutineScope.(Response, Request) -> T,
 ): T {
     val url = this
 
     return withContext(Dispatchers.IO) {
-        val client = OkHttpClient.Builder()
+        val clientBuilder = OkHttpClient.Builder()
             .sslSocketFactory(
                 TrustAllSSLSocketFactory.sslSocketFactory,
                 TrustAllSSLSocketFactory.trustManager
             )
             .hostnameVerifier { _, _ -> true }
-            .followRedirects(true).build()
+            .followRedirects(true)
+
+        if (useLiveProxy) LiveNetworkProxy.applyTo(clientBuilder)
+
+        val client = clientBuilder.build()
         val request = Request.Builder()
             .url(url)
             .let(builder)

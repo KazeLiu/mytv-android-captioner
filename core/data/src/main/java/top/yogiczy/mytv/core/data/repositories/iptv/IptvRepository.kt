@@ -131,7 +131,7 @@ private class IptvRawRepository(private val source: IptvSource) : FileCacheRepos
             log.d("获取直播源: $source")
 
             try {
-                source.url.request { body -> body.string() } ?: ""
+                source.url.request(useLiveProxy = true) { body -> body.string() } ?: ""
             } catch (ex: Exception) {
                 log.e("获取直播源（${source.name}）失败", ex)
                 throw HttpException("获取直播源失败，请检查网络连接", ex)

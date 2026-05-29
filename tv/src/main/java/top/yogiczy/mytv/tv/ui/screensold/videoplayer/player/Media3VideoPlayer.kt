@@ -20,10 +20,13 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm
@@ -41,12 +44,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.channel.ChannelLine
 import top.yogiczy.mytv.core.util.utils.toHeaders
+import top.yogiczy.mytv.tv.ui.screensold.videoplayer.captioner.CaptionAudioProcessor
+import top.yogiczy.mytv.tv.ui.screensold.videoplayer.captioner.LiveAudioCaptureSink
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
 @OptIn(UnstableApi::class)
 class Media3VideoPlayer(
     private val context: Context,
     private val coroutineScope: CoroutineScope,
+    private val audioCaptureSink: LiveAudioCaptureSink? = null,
 ) : VideoPlayer(coroutineScope) {
 
     private var videoPlayer = getPlayer()
@@ -71,7 +77,23 @@ class Media3VideoPlayer(
 
     private fun getPlayer(): ExoPlayer {
         val renderersFactory =
-            DefaultRenderersFactory(context)
+            object : DefaultRenderersFactory(context) {
+                override fun buildAudioSink(
+                    context: Context,
+                    enableFloatOutput: Boolean,
+                    enableAudioTrackPlaybackParams: Boolean,
+                ): AudioSink {
+                    val builder = DefaultAudioSink.Builder(context)
+                        .setEnableFloatOutput(enableFloatOutput)
+                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+
+                    audioCaptureSink?.let {
+                        builder.setAudioProcessors(arrayOf(CaptionAudioProcessor(it)))
+                    }
+
+                    return builder.build()
+                }
+            }
                 .setExtensionRendererMode(
                     if (softDecode ?: Configs.videoPlayerForceAudioSoftDecode)
                         DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
@@ -119,16 +141,28 @@ class Media3VideoPlayer(
     }
 
     private fun getDataSourceFactory(): DefaultDataSource.Factory {
+        val httpDataSourceFactory: HttpDataSource.Factory =
+            if (Configs.liveNetworkProxyConfig.toProxy() != null) {
+                OkHttpLiveHttpDataSource.Factory().apply {
+                    setUserAgent(currentChannelLine.httpUserAgent ?: Configs.videoPlayerUserAgent)
+                    setDefaultRequestProperties(Configs.videoPlayerHeaders.toHeaders())
+                    setConnectTimeoutMs(Configs.videoPlayerLoadTimeout.toInt())
+                    setReadTimeoutMs(Configs.videoPlayerLoadTimeout.toInt())
+                }
+            } else {
+                DefaultHttpDataSource.Factory().apply {
+                    setUserAgent(currentChannelLine.httpUserAgent ?: Configs.videoPlayerUserAgent)
+                    setDefaultRequestProperties(Configs.videoPlayerHeaders.toHeaders())
+                    setConnectTimeoutMs(Configs.videoPlayerLoadTimeout.toInt())
+                    setReadTimeoutMs(Configs.videoPlayerLoadTimeout.toInt())
+                    setKeepPostFor302Redirects(true)
+                    setAllowCrossProtocolRedirects(true)
+                }
+            }
+
         return DefaultDataSource.Factory(
             context,
-            DefaultHttpDataSource.Factory().apply {
-                setUserAgent(currentChannelLine.httpUserAgent ?: Configs.videoPlayerUserAgent)
-                setDefaultRequestProperties(Configs.videoPlayerHeaders.toHeaders())
-                setConnectTimeoutMs(Configs.videoPlayerLoadTimeout.toInt())
-                setReadTimeoutMs(Configs.videoPlayerLoadTimeout.toInt())
-                setKeepPostFor302Redirects(true)
-                setAllowCrossProtocolRedirects(true)
-            },
+            httpDataSourceFactory,
         )
     }
 

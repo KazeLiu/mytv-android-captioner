@@ -2,6 +2,7 @@ package top.yogiczy.mytv.tv.ui.utils
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+import top.yogiczy.mytv.core.data.network.LiveNetworkProxyConfig
 import top.yogiczy.mytv.core.data.entities.channel.Channel
 import top.yogiczy.mytv.core.data.entities.channel.ChannelFavoriteList
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
@@ -21,6 +22,8 @@ import top.yogiczy.mytv.tv.ui.screensold.videoplayer.VideoPlayerDisplayMode
  * 应用配置
  */
 object Configs {
+    const val CAPTIONER_TARGET_NONE = "none"
+
     enum class KEY {
         /** ==================== 应用 ==================== */
         /** 开机自启 */
@@ -160,6 +163,16 @@ object Configs {
         /** 更新通道 */
         UPDATE_CHANNEL,
 
+        /** ==================== 网络 ==================== */
+        /** 直播网络代理 开启 */
+        LIVE_NETWORK_PROXY_ENABLE,
+
+        /** 直播网络代理 主机 */
+        LIVE_NETWORK_PROXY_HOST,
+
+        /** 直播网络代理 端口 */
+        LIVE_NETWORK_PROXY_PORT,
+
         /** ==================== 播放器 ==================== */
         /** 播放器 内核 */
         VIDEO_PLAYER_CORE,
@@ -187,6 +200,69 @@ object Configs {
 
         /** 播放器 跳过同一VSync渲染多帧 */
         VIDEO_PLAYER_SKIP_MULTIPLE_FRAMES_ON_SAME_VSYNC,
+
+        /** AI字幕 开启 */
+        CAPTIONER_ENABLED,
+
+        /** AI字幕 后端地址 */
+        CAPTIONER_SERVER_URL,
+
+        /** AI字幕 源语言 */
+        CAPTIONER_SOURCE_LANGUAGE,
+
+        /** AI字幕 目标语言 */
+        CAPTIONER_TARGET_LANGUAGE,
+
+        /** AI字幕 中文输出书写格式 */
+        CAPTIONER_CHINESE_SCRIPT,
+
+        /** AI字幕 双语字幕 */
+        CAPTIONER_BILINGUAL_ENABLED,
+
+        /** AI字幕 ASR模型 */
+        CAPTIONER_ASR_MODEL,
+
+        /** AI字幕 翻译模型 */
+        CAPTIONER_TRANSLATION_MODEL,
+
+        /** AI字幕 分段上限 */
+        CAPTIONER_CHUNK_DURATION_MS,
+
+        /** AI字幕 临时字幕搜索宽度 */
+        CAPTIONER_PARTIAL_BEAM_SIZE,
+
+        /** AI字幕 修正字幕搜索宽度 */
+        CAPTIONER_FINAL_BEAM_SIZE,
+
+        /** AI字幕 显示时长 */
+        CAPTIONER_DISPLAY_DURATION_MS,
+
+        /** AI字幕 字幕颜色 */
+        CAPTIONER_TEXT_COLOR,
+
+        /** AI字幕 背景颜色 */
+        CAPTIONER_BACKGROUND_COLOR,
+
+        /** AI字幕 显示位置 */
+        CAPTIONER_POSITION,
+
+        /** AI字幕 水平偏移 */
+        CAPTIONER_OFFSET_X,
+
+        /** AI字幕 垂直偏移 */
+        CAPTIONER_OFFSET_Y,
+
+        /** AI字幕 文字对齐 */
+        CAPTIONER_TEXT_ALIGN,
+
+        /** AI字幕 单行模式 */
+        CAPTIONER_SINGLE_LINE_MODE,
+
+        /** AI字幕 主字幕字号 */
+        CAPTIONER_PRIMARY_FONT_SIZE,
+
+        /** AI字幕 副字幕字号 */
+        CAPTIONER_SECONDARY_FONT_SIZE,
 
         /** ==================== 主题 ==================== */
         /** 当前应用主题 */
@@ -492,6 +568,29 @@ object Configs {
         get() = SP.getString(KEY.UPDATE_CHANNEL.name, "stable")
         set(value) = SP.putString(KEY.UPDATE_CHANNEL.name, value)
 
+    /** ==================== 网络 ==================== */
+    /** 直播网络代理 开启 */
+    var liveNetworkProxyEnable: Boolean
+        get() = SP.getBoolean(KEY.LIVE_NETWORK_PROXY_ENABLE.name, false)
+        set(value) = SP.putBoolean(KEY.LIVE_NETWORK_PROXY_ENABLE.name, value)
+
+    /** 直播网络代理 主机 */
+    var liveNetworkProxyHost: String
+        get() = SP.getString(KEY.LIVE_NETWORK_PROXY_HOST.name, "")
+        set(value) = SP.putString(KEY.LIVE_NETWORK_PROXY_HOST.name, value.trim())
+
+    /** 直播网络代理 端口 */
+    var liveNetworkProxyPort: Int
+        get() = SP.getInt(KEY.LIVE_NETWORK_PROXY_PORT.name, 0)
+        set(value) = SP.putInt(KEY.LIVE_NETWORK_PROXY_PORT.name, value.coerceIn(0, 65535))
+
+    val liveNetworkProxyConfig: LiveNetworkProxyConfig
+        get() = LiveNetworkProxyConfig(
+            enabled = liveNetworkProxyEnable,
+            host = liveNetworkProxyHost,
+            port = liveNetworkProxyPort,
+        )
+
     /** ==================== 播放器 ==================== */
     /** 播放器 内核 */
     var videoPlayerCore: VideoPlayerCore
@@ -545,6 +644,168 @@ object Configs {
     var videoPlayerSkipMultipleFramesOnSameVSync: Boolean
         get() = SP.getBoolean(KEY.VIDEO_PLAYER_SKIP_MULTIPLE_FRAMES_ON_SAME_VSYNC.name, true)
         set(value) = SP.putBoolean(KEY.VIDEO_PLAYER_SKIP_MULTIPLE_FRAMES_ON_SAME_VSYNC.name, value)
+
+    /** AI字幕 开启 */
+    var captionerEnabled: Boolean
+        get() = SP.getBoolean(KEY.CAPTIONER_ENABLED.name, false)
+        set(value) = SP.putBoolean(KEY.CAPTIONER_ENABLED.name, value)
+
+    /** AI字幕 后端地址 */
+    var captionerServerUrl: String
+        get() = SP.getString(KEY.CAPTIONER_SERVER_URL.name, "http://127.0.0.1:8765")
+        set(value) = SP.putString(KEY.CAPTIONER_SERVER_URL.name, value.trim())
+
+    /** AI字幕 源语言 */
+    var captionerSourceLanguage: String
+        get() = normalizeCaptionerSourceLanguage(
+            SP.getString(KEY.CAPTIONER_SOURCE_LANGUAGE.name, "auto")
+        )
+        set(value) = SP.putString(
+            KEY.CAPTIONER_SOURCE_LANGUAGE.name,
+            normalizeCaptionerSourceLanguage(value)
+        )
+
+    /** AI字幕 目标语言 */
+    var captionerTargetLanguage: String
+        get() = normalizeCaptionerTargetLanguage(
+            SP.getString(KEY.CAPTIONER_TARGET_LANGUAGE.name, "Chinese")
+        )
+        set(value) {
+            when (value.trim().lowercase()) {
+                "chinesesimplified", "simplified chinese", "zh-hans", "hans", "简体", "简体中文" ->
+                    captionerChineseScript = "simplified"
+
+                "chinesetraditional", "traditional chinese", "zh-hant", "hant", "繁体", "繁體",
+                "繁体中文", "繁體中文" -> captionerChineseScript = "traditional"
+            }
+            SP.putString(
+                KEY.CAPTIONER_TARGET_LANGUAGE.name,
+                normalizeCaptionerTargetLanguage(value)
+            )
+        }
+
+    /** AI字幕 中文输出书写格式 */
+    var captionerChineseScript: String
+        get() = normalizeCaptionerChineseScript(
+            SP.getString(KEY.CAPTIONER_CHINESE_SCRIPT.name, "simplified")
+        )
+        set(value) = SP.putString(
+            KEY.CAPTIONER_CHINESE_SCRIPT.name,
+            normalizeCaptionerChineseScript(value)
+        )
+
+    /** AI字幕 是否启用翻译 */
+    val captionerTranslationEnabled: Boolean
+        get() = captionerTargetLanguage != CAPTIONER_TARGET_NONE
+
+    /** AI字幕 双语字幕 */
+    var captionerBilingualEnabled: Boolean
+        get() = SP.getBoolean(KEY.CAPTIONER_BILINGUAL_ENABLED.name, true)
+        set(value) = SP.putBoolean(KEY.CAPTIONER_BILINGUAL_ENABLED.name, value)
+
+    /** AI字幕 ASR模型 */
+    var captionerAsrModel: String
+        get() = SP.getString(KEY.CAPTIONER_ASR_MODEL.name, "large-v2").ifBlank { "large-v2" }
+        set(value) = SP.putString(
+            KEY.CAPTIONER_ASR_MODEL.name,
+            value.trim().ifBlank { "large-v2" }
+        )
+
+    /** AI字幕 翻译模型 */
+    var captionerTranslationModel: String
+        get() = SP.getString(
+            KEY.CAPTIONER_TRANSLATION_MODEL.name,
+            "qwen2.5-1.5b-instruct-gguf"
+        ).ifBlank { "qwen2.5-1.5b-instruct-gguf" }
+        set(value) = SP.putString(
+            KEY.CAPTIONER_TRANSLATION_MODEL.name,
+            value.trim().ifBlank { "qwen2.5-1.5b-instruct-gguf" },
+        )
+
+    /** AI字幕 分段上限 */
+    var captionerChunkDurationMs: Long
+        get() = SP.getLong(KEY.CAPTIONER_CHUNK_DURATION_MS.name, 5000L)
+        set(value) = SP.putLong(
+            KEY.CAPTIONER_CHUNK_DURATION_MS.name,
+            value.coerceIn(1000L, 15000L)
+        )
+
+    /** AI字幕 临时字幕搜索宽度 */
+    var captionerPartialBeamSize: Int
+        get() = SP.getInt(KEY.CAPTIONER_PARTIAL_BEAM_SIZE.name, 1).coerceIn(1, 5)
+        set(value) = SP.putInt(KEY.CAPTIONER_PARTIAL_BEAM_SIZE.name, value.coerceIn(1, 5))
+
+    /** AI字幕 修正字幕搜索宽度 */
+    var captionerFinalBeamSize: Int
+        get() = SP.getInt(KEY.CAPTIONER_FINAL_BEAM_SIZE.name, 3).coerceIn(1, 5)
+        set(value) = SP.putInt(KEY.CAPTIONER_FINAL_BEAM_SIZE.name, value.coerceIn(1, 5))
+
+    /** AI字幕 显示时长 */
+    var captionerDisplayDurationMs: Long
+        get() = SP.getLong(KEY.CAPTIONER_DISPLAY_DURATION_MS.name, 7000L)
+        set(value) = SP.putLong(
+            KEY.CAPTIONER_DISPLAY_DURATION_MS.name,
+            value.coerceIn(1000L, 30000L)
+        )
+
+    /** AI字幕 字幕颜色 */
+    var captionerTextColor: CaptionerTextColor
+        get() = CaptionerTextColor.fromValue(
+            SP.getInt(KEY.CAPTIONER_TEXT_COLOR.name, CaptionerTextColor.WHITE.value)
+        )
+        set(value) = SP.putInt(KEY.CAPTIONER_TEXT_COLOR.name, value.value)
+
+    /** AI字幕 背景颜色 */
+    var captionerBackgroundColor: CaptionerBackgroundColor
+        get() = CaptionerBackgroundColor.fromValue(
+            SP.getInt(KEY.CAPTIONER_BACKGROUND_COLOR.name, CaptionerBackgroundColor.BLACK.value)
+        )
+        set(value) = SP.putInt(KEY.CAPTIONER_BACKGROUND_COLOR.name, value.value)
+
+    /** AI字幕 显示位置 */
+    var captionerPosition: CaptionerPosition
+        get() = CaptionerPosition.fromValue(
+            SP.getInt(KEY.CAPTIONER_POSITION.name, CaptionerPosition.BOTTOM.value)
+        )
+        set(value) = SP.putInt(KEY.CAPTIONER_POSITION.name, value.value)
+
+    /** AI字幕 水平偏移 */
+    var captionerOffsetX: Int
+        get() = SP.getInt(KEY.CAPTIONER_OFFSET_X.name, 0)
+        set(value) = SP.putInt(KEY.CAPTIONER_OFFSET_X.name, value.coerceIn(-1200, 1200))
+
+    /** AI字幕 垂直偏移 */
+    var captionerOffsetY: Int
+        get() = SP.getInt(KEY.CAPTIONER_OFFSET_Y.name, 0)
+        set(value) = SP.putInt(KEY.CAPTIONER_OFFSET_Y.name, value.coerceIn(-700, 700))
+
+    /** AI字幕 文字对齐 */
+    var captionerTextAlign: CaptionerTextAlign
+        get() = CaptionerTextAlign.fromValue(
+            SP.getInt(KEY.CAPTIONER_TEXT_ALIGN.name, CaptionerTextAlign.CENTER.value)
+        )
+        set(value) = SP.putInt(KEY.CAPTIONER_TEXT_ALIGN.name, value.value)
+
+    /** AI字幕 单行模式 */
+    var captionerSingleLineMode: Boolean
+        get() = SP.getBoolean(KEY.CAPTIONER_SINGLE_LINE_MODE.name, false)
+        set(value) = SP.putBoolean(KEY.CAPTIONER_SINGLE_LINE_MODE.name, value)
+
+    /** AI字幕 主字幕字号 */
+    var captionerPrimaryFontSize: Int
+        get() = SP.getInt(KEY.CAPTIONER_PRIMARY_FONT_SIZE.name, 26)
+        set(value) = SP.putInt(
+            KEY.CAPTIONER_PRIMARY_FONT_SIZE.name,
+            value.coerceIn(12, 50)
+        )
+
+    /** AI字幕 副字幕字号 */
+    var captionerSecondaryFontSize: Int
+        get() = SP.getInt(KEY.CAPTIONER_SECONDARY_FONT_SIZE.name, 18)
+        set(value) = SP.putInt(
+            KEY.CAPTIONER_SECONDARY_FONT_SIZE.name,
+            value.coerceIn(12, 50)
+        )
 
     /** ==================== 主题 ==================== */
     /** 当前应用主题 */
@@ -685,6 +946,128 @@ object Configs {
         }
     }
 
+    enum class CaptionerTextColor(val value: Int, val label: String) {
+        /** 白色 */
+        WHITE(0xFFFFFFFF.toInt(), "白色"),
+
+        /** 柔黄 */
+        YELLOW(0xFFFFF176.toInt(), "柔黄"),
+
+        /** 青蓝 */
+        CYAN(0xFF80DEEA.toInt(), "青蓝"),
+
+        /** 浅绿 */
+        GREEN(0xFFA5D6A7.toInt(), "浅绿");
+
+        companion object {
+            fun fromValue(value: Int): CaptionerTextColor {
+                return entries.firstOrNull { it.value == value } ?: WHITE
+            }
+        }
+    }
+
+    enum class CaptionerBackgroundColor(val value: Int, val label: String) {
+        /** 深黑 */
+        BLACK(0xAD000000.toInt(), "深黑"),
+
+        /** 半透明 */
+        TRANSLUCENT(0x80000000.toInt(), "半透明"),
+
+        /** 深蓝 */
+        BLUE(0xB30B1F3A.toInt(), "深蓝"),
+
+        /** 无背景 */
+        TRANSPARENT(0x00000000, "无背景");
+
+        companion object {
+            fun fromValue(value: Int): CaptionerBackgroundColor {
+                return entries.firstOrNull { it.value == value } ?: BLACK
+            }
+        }
+    }
+
+    enum class CaptionerPosition(val value: Int, val label: String) {
+        /** 顶部 */
+        TOP(0, "顶部"),
+
+        /** 居中 */
+        CENTER(1, "居中"),
+
+        /** 底部 */
+        BOTTOM(2, "底部");
+
+        companion object {
+            fun fromValue(value: Int): CaptionerPosition {
+                return entries.firstOrNull { it.value == value } ?: BOTTOM
+            }
+        }
+    }
+
+    enum class CaptionerTextAlign(val value: Int, val label: String) {
+        /** 居左 */
+        LEFT(0, "居左"),
+
+        /** 居中 */
+        CENTER(1, "居中"),
+
+        /** 居右 */
+        RIGHT(2, "居右");
+
+        companion object {
+            fun fromValue(value: Int): CaptionerTextAlign {
+                return entries.firstOrNull { it.value == value } ?: CENTER
+            }
+        }
+    }
+
+    private fun normalizeCaptionerSourceLanguage(language: String): String {
+        val value = language.trim()
+        if (value.isBlank()) return "auto"
+
+        return when (value.lowercase()) {
+            "auto", "automatic", "自动", "自动识别" -> "auto"
+            "zh", "cn", "chinese", "中文", "汉语", "普通话" -> "zh"
+            "yue", "cantonese", "粤语" -> "yue"
+            "en", "eng", "english", "英文", "英语" -> "en"
+            "ja", "jp", "japanese", "日文", "日语" -> "ja"
+            "ko", "kr", "korean", "韩文", "韩语" -> "ko"
+            "fr", "french", "法文", "法语" -> "fr"
+            "de", "german", "德文", "德语" -> "de"
+            "es", "spanish", "西文", "西班牙语" -> "es"
+            "ru", "russian", "俄文", "俄语" -> "ru"
+            else -> value
+        }
+    }
+
+    private fun normalizeCaptionerTargetLanguage(language: String): String {
+        val value = language.trim()
+        if (value.isBlank()) return "Chinese"
+
+        return when (value.lowercase()) {
+            CAPTIONER_TARGET_NONE, "off", "false", "no", "disable", "disabled",
+            "asr", "asr-only", "notranslate", "no-translate", "no translate",
+            "不翻译", "不翻譯", "关闭翻译", "只转写", "仅转写" -> CAPTIONER_TARGET_NONE
+
+            "chinesesimplified", "chinesetraditional", "simplified chinese", "traditional chinese",
+            "zh-hans", "zh-hant", "hans", "hant", "简体", "简体中文", "繁体", "繁體",
+            "繁体中文", "繁體中文" -> "Chinese"
+
+            else -> value
+        }
+    }
+
+    private fun normalizeCaptionerChineseScript(script: String): String {
+        val value = script.trim()
+        if (value.isBlank()) return "simplified"
+
+        return when (value.lowercase()) {
+            "simplified", "simple", "hans", "zh-hans", "sc", "cn", "简体", "简体中文" -> "simplified"
+            "traditional", "trad", "hant", "zh-hant", "tc", "繁体", "繁體", "繁体中文", "繁體中文" -> "traditional"
+            "original", "raw", "keep", "保留原文", "原始" -> "original"
+            else -> value
+        }
+    }
+
     fun toPartial(): Partial {
         return Partial(
             appBootLaunch = appBootLaunch,
@@ -731,6 +1114,9 @@ object Configs {
             uiScreenAutoCloseDelay = uiScreenAutoCloseDelay,
             updateForceRemind = updateForceRemind,
             updateChannel = updateChannel,
+            liveNetworkProxyEnable = liveNetworkProxyEnable,
+            liveNetworkProxyHost = liveNetworkProxyHost,
+            liveNetworkProxyPort = liveNetworkProxyPort,
             videoPlayerCore = videoPlayerCore,
             videoPlayerRenderMode = videoPlayerRenderMode,
             videoPlayerUserAgent = videoPlayerUserAgent,
@@ -740,6 +1126,27 @@ object Configs {
             videoPlayerForceAudioSoftDecode = videoPlayerForceAudioSoftDecode,
             videoPlayerStopPreviousMediaItem = videoPlayerStopPreviousMediaItem,
             videoPlayerSkipMultipleFramesOnSameVSync = videoPlayerSkipMultipleFramesOnSameVSync,
+            captionerEnabled = captionerEnabled,
+            captionerServerUrl = captionerServerUrl,
+            captionerSourceLanguage = captionerSourceLanguage,
+            captionerTargetLanguage = captionerTargetLanguage,
+            captionerChineseScript = captionerChineseScript,
+            captionerBilingualEnabled = captionerBilingualEnabled,
+            captionerAsrModel = captionerAsrModel,
+            captionerTranslationModel = captionerTranslationModel,
+            captionerChunkDurationMs = captionerChunkDurationMs,
+            captionerPartialBeamSize = captionerPartialBeamSize,
+            captionerFinalBeamSize = captionerFinalBeamSize,
+            captionerDisplayDurationMs = captionerDisplayDurationMs,
+            captionerTextColor = captionerTextColor,
+            captionerBackgroundColor = captionerBackgroundColor,
+            captionerPosition = captionerPosition,
+            captionerOffsetX = captionerOffsetX,
+            captionerOffsetY = captionerOffsetY,
+            captionerTextAlign = captionerTextAlign,
+            captionerSingleLineMode = captionerSingleLineMode,
+            captionerPrimaryFontSize = captionerPrimaryFontSize,
+            captionerSecondaryFontSize = captionerSecondaryFontSize,
             themeAppCurrent = themeAppCurrent,
             cloudSyncAutoPull = cloudSyncAutoPull,
             cloudSyncProvider = cloudSyncProvider,
@@ -803,6 +1210,9 @@ object Configs {
         configs.uiScreenAutoCloseDelay?.let { uiScreenAutoCloseDelay = it }
         configs.updateForceRemind?.let { updateForceRemind = it }
         configs.updateChannel?.let { updateChannel = it }
+        configs.liveNetworkProxyEnable?.let { liveNetworkProxyEnable = it }
+        configs.liveNetworkProxyHost?.let { liveNetworkProxyHost = it }
+        configs.liveNetworkProxyPort?.let { liveNetworkProxyPort = it }
         configs.videoPlayerCore?.let { videoPlayerCore = it }
         configs.videoPlayerRenderMode?.let { videoPlayerRenderMode = it }
         configs.videoPlayerUserAgent?.let { videoPlayerUserAgent = it }
@@ -811,6 +1221,30 @@ object Configs {
         configs.videoPlayerDisplayMode?.let { videoPlayerDisplayMode = it }
         configs.videoPlayerForceAudioSoftDecode?.let { videoPlayerForceAudioSoftDecode = it }
         configs.videoPlayerStopPreviousMediaItem?.let { videoPlayerStopPreviousMediaItem = it }
+        configs.videoPlayerSkipMultipleFramesOnSameVSync?.let {
+            videoPlayerSkipMultipleFramesOnSameVSync = it
+        }
+        configs.captionerEnabled?.let { captionerEnabled = it }
+        configs.captionerServerUrl?.let { captionerServerUrl = it }
+        configs.captionerSourceLanguage?.let { captionerSourceLanguage = it }
+        configs.captionerTargetLanguage?.let { captionerTargetLanguage = it }
+        configs.captionerChineseScript?.let { captionerChineseScript = it }
+        configs.captionerBilingualEnabled?.let { captionerBilingualEnabled = it }
+        configs.captionerAsrModel?.let { captionerAsrModel = it }
+        configs.captionerTranslationModel?.let { captionerTranslationModel = it }
+        configs.captionerChunkDurationMs?.let { captionerChunkDurationMs = it }
+        configs.captionerPartialBeamSize?.let { captionerPartialBeamSize = it }
+        configs.captionerFinalBeamSize?.let { captionerFinalBeamSize = it }
+        configs.captionerDisplayDurationMs?.let { captionerDisplayDurationMs = it }
+        configs.captionerTextColor?.let { captionerTextColor = it }
+        configs.captionerBackgroundColor?.let { captionerBackgroundColor = it }
+        configs.captionerPosition?.let { captionerPosition = it }
+        configs.captionerOffsetX?.let { captionerOffsetX = it }
+        configs.captionerOffsetY?.let { captionerOffsetY = it }
+        configs.captionerTextAlign?.let { captionerTextAlign = it }
+        configs.captionerSingleLineMode?.let { captionerSingleLineMode = it }
+        configs.captionerPrimaryFontSize?.let { captionerPrimaryFontSize = it }
+        configs.captionerSecondaryFontSize?.let { captionerSecondaryFontSize = it }
         configs.themeAppCurrent?.let { themeAppCurrent = it }
         configs.cloudSyncAutoPull?.let { cloudSyncAutoPull = it }
         configs.cloudSyncProvider?.let { cloudSyncProvider = it }
@@ -872,6 +1306,9 @@ object Configs {
         val uiScreenAutoCloseDelay: Long? = null,
         val updateForceRemind: Boolean? = null,
         val updateChannel: String? = null,
+        val liveNetworkProxyEnable: Boolean? = null,
+        val liveNetworkProxyHost: String? = null,
+        val liveNetworkProxyPort: Int? = null,
         val videoPlayerCore: VideoPlayerCore? = null,
         val videoPlayerRenderMode: VideoPlayerRenderMode? = null,
         val videoPlayerUserAgent: String? = null,
@@ -881,6 +1318,27 @@ object Configs {
         val videoPlayerForceAudioSoftDecode: Boolean? = null,
         val videoPlayerStopPreviousMediaItem: Boolean? = null,
         val videoPlayerSkipMultipleFramesOnSameVSync: Boolean? = null,
+        val captionerEnabled: Boolean? = null,
+        val captionerServerUrl: String? = null,
+        val captionerSourceLanguage: String? = null,
+        val captionerTargetLanguage: String? = null,
+        val captionerChineseScript: String? = null,
+        val captionerBilingualEnabled: Boolean? = null,
+        val captionerAsrModel: String? = null,
+        val captionerTranslationModel: String? = null,
+        val captionerChunkDurationMs: Long? = null,
+        val captionerPartialBeamSize: Int? = null,
+        val captionerFinalBeamSize: Int? = null,
+        val captionerDisplayDurationMs: Long? = null,
+        val captionerTextColor: CaptionerTextColor? = null,
+        val captionerBackgroundColor: CaptionerBackgroundColor? = null,
+        val captionerPosition: CaptionerPosition? = null,
+        val captionerOffsetX: Int? = null,
+        val captionerOffsetY: Int? = null,
+        val captionerTextAlign: CaptionerTextAlign? = null,
+        val captionerSingleLineMode: Boolean? = null,
+        val captionerPrimaryFontSize: Int? = null,
+        val captionerSecondaryFontSize: Int? = null,
         val themeAppCurrent: AppThemeDef? = null,
         val cloudSyncAutoPull: Boolean? = null,
         val cloudSyncProvider: CloudSyncProvider? = null,
@@ -907,6 +1365,9 @@ object Configs {
             cloudSyncWebDavUrl = null,
             cloudSyncWebDavUsername = null,
             cloudSyncWebDavPassword = null,
+            liveNetworkProxyEnable = null,
+            liveNetworkProxyHost = null,
+            liveNetworkProxyPort = null,
             iptvChannelLastPlay = null,
             iptvChannelLinePlayableHostList = null,
             iptvChannelLinePlayableUrlList = null,

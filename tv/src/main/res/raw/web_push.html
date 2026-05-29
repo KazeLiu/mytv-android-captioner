@@ -132,6 +132,39 @@
                         </van-cell>
                     </van-cell-group>
 
+                    <van-cell-group inset title="网络">
+                        <van-cell title="直播网络代理">
+                            <template #label>
+                                <span>仅代理直播源、节目单和播放流；不影响AI字幕、云同步、更新和扫码配置页</span>
+                            </template>
+                            <template #extra>
+                                <van-switch v-model="configs.liveNetworkProxyEnable"></van-switch>
+                            </template>
+                        </van-cell>
+
+                        <van-cell title="直播代理主机">
+                            <template #label>
+                                <van-field class="!p-0" placeholder="127.0.0.1"
+                                    v-model="configs.liveNetworkProxyHost"></van-field>
+                            </template>
+                        </van-cell>
+
+                        <van-cell title="直播代理端口">
+                            <template #label>
+                                <van-field class="!p-0" placeholder="7890" type="number"
+                                    v-model="configs.liveNetworkProxyPort"></van-field>
+                            </template>
+                        </van-cell>
+
+                        <van-cell>
+                            <div class="flex justify-end">
+                                <van-button @click="pushConfigs" size="small" type="primary">
+                                    推送
+                                </van-button>
+                            </div>
+                        </van-cell>
+                    </van-cell-group>
+
                     <van-cell-group inset title="播放器">
                         <van-cell title="自定义ua">
                             <template #label>
@@ -360,9 +393,13 @@
                 async function pushConfigs() {
                     try {
                         vant.showLoadingToast({ message: '加载中...', forbidClick: true, duration: 0 })
+                        const payload = {
+                            ...configs.value,
+                            liveNetworkProxyPort: Number(configs.value.liveNetworkProxyPort || 0),
+                        }
                         await requestApi('/api/configs', {
                             method: "POST",
-                            body: JSON.stringify(configs.value),
+                            body: JSON.stringify(payload),
                             headers: { 'Content-Type': 'application/json' }
                         })
                         await refreshConfigs()

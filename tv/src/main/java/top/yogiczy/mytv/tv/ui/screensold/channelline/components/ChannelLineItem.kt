@@ -104,12 +104,14 @@ private fun rememberLineDelay(line: ChannelLine): Long {
             withContext(Dispatchers.IO) {
                 elapsedTime = measureTimeMillis {
                     try {
-                        line.url.request({ builder ->
-                            builder
-                                .apply {
+                        line.url.request(
+                            builder = { builder ->
+                                builder.apply {
                                     line.httpUserAgent?.let { header("User-Agent", it) }
                                 }
-                        }) { body -> body.string() }
+                            },
+                            useLiveProxy = true,
+                        ) { body -> body.string() }
                     } catch (_: IOException) {
                         hasError = true
                     }

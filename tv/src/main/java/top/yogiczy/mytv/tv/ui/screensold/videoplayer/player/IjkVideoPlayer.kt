@@ -59,6 +59,11 @@ class IjkVideoPlayer(
 
     override fun prepare(line: ChannelLine) {
         player.reset()
+        player.setOption(
+            IjkMediaPlayer.OPT_CATEGORY_FORMAT,
+            "http_proxy",
+            Configs.liveNetworkProxyConfig.toHttpProxyUrl().orEmpty(),
+        )
         player.setDataSource(
             line.playableUrl,
             Configs.videoPlayerHeaders.toHeaders() + mapOf(

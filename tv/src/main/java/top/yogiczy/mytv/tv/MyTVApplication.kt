@@ -16,7 +16,9 @@ import io.sentry.SentryLevel
 import io.sentry.SentryOptions
 import io.sentry.android.core.SentryAndroid
 import top.yogiczy.mytv.core.data.AppData
+import top.yogiczy.mytv.core.data.network.LiveNetworkProxy
 import top.yogiczy.mytv.core.data.utils.Globals
+import top.yogiczy.mytv.tv.ui.utils.Configs
 import kotlin.system.exitProcess
 
 class MyTVApplication : Application(), ImageLoaderFactory {
@@ -26,6 +28,7 @@ class MyTVApplication : Application(), ImageLoaderFactory {
         initSentry()
         crashHandle()
         AppData.init(applicationContext)
+        LiveNetworkProxy.configProvider = { Configs.liveNetworkProxyConfig }
         UnsafeTrustManager.enableUnsafeTrustManager()
     }
 

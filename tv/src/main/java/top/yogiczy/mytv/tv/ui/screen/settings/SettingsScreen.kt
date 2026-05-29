@@ -1,5 +1,6 @@
 package top.yogiczy.mytv.tv.ui.screen.settings
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,6 +23,7 @@ import top.yogiczy.mytv.core.data.repositories.epg.EpgRepository
 import top.yogiczy.mytv.core.data.repositories.iptv.IptvRepository
 import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.screen.components.AppScreen
+import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsAiCaptionerScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsAppScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsCloudSyncScreen
 import top.yogiczy.mytv.tv.ui.screen.settings.categories.SettingsControlScreen
@@ -66,6 +69,7 @@ fun SettingsScreen(
     onReload: () -> Unit = {},
     onBackPressed: () -> Unit = {},
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -160,6 +164,15 @@ fun SettingsScreen(
                         },
                         toVideoPlayerLoadTimeoutScreen = {
                             navController.navigateSingleTop(SettingsSubCategories.VIDEO_PLAYER_LOAD_TIMEOUT.name)
+                        },
+                        onBackPressed = { navController.navigateUp() },
+                    )
+                }
+
+                composable(SettingsCategories.AI_CAPTIONER.name) {
+                    SettingsAiCaptionerScreen(
+                        onRestartPlayback = {
+                            context.sendBroadcast(Intent(RESTART_PLAY_ACTION))
                         },
                         onBackPressed = { navController.navigateUp() },
                     )
@@ -416,3 +429,5 @@ fun SettingsScreen(
         )
     }
 }
+
+private const val RESTART_PLAY_ACTION = "top.yogiczy.mytv.tv.RESTART_PLAY"

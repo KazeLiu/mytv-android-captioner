@@ -1,6 +1,11 @@
 package top.yogiczy.mytv.tv.ui.screensold.main.components
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -9,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -160,7 +167,8 @@ class MainContentState(
             changeCurrentChannel(
                 _currentChannel,
                 _currentChannelLineIdx,
-                _currentPlaybackEpgProgramme
+                _currentPlaybackEpgProgramme,
+                force = true,
             )
         }
 
@@ -267,10 +275,16 @@ class MainContentState(
         channel: Channel,
         lineIdx: Int? = null,
         playbackEpgProgramme: EpgProgramme? = null,
+        force: Boolean = false,
     ) {
         settingsViewModel.iptvChannelLastPlay = channel
 
-        if (channel == _currentChannel && lineIdx == _currentChannelLineIdx && playbackEpgProgramme == _currentPlaybackEpgProgramme) return
+        if (
+            !force &&
+            channel == _currentChannel &&
+            lineIdx == _currentChannelLineIdx &&
+            playbackEpgProgramme == _currentPlaybackEpgProgramme
+        ) return
 
         if (channel == _currentChannel && lineIdx != _currentChannelLineIdx) {
             settingsViewModel.iptvChannelLinePlayableUrlList -= currentChannelLine.url
@@ -306,6 +320,15 @@ class MainContentState(
         } else {
             videoPlayerState.prepare(line)
         }
+    }
+
+    fun restartCurrentPlayback() {
+        changeCurrentChannel(
+            _currentChannel,
+            _currentChannelLineIdx,
+            _currentPlaybackEpgProgramme,
+            force = true,
+        )
     }
 
     fun changeCurrentChannelToPrev() {
@@ -356,9 +379,10 @@ fun rememberMainContentState(
     favoriteChannelListProvider: () -> ChannelList = { ChannelList() },
     settingsViewModel: SettingsViewModel = settingsVM,
 ): MainContentState {
+    val context = LocalContext.current
     val favoriteChannelListProviderUpdated by rememberUpdatedState(favoriteChannelListProvider)
 
-    return remember(settingsVM.videoPlayerCore) {
+    val state = remember(settingsVM.videoPlayerCore) {
         MainContentState(
             coroutineScope = coroutineScope,
             videoPlayerState = videoPlayerState,
@@ -367,4 +391,29 @@ fun rememberMainContentState(
             settingsViewModel = settingsViewModel,
         )
     }
+
+    DisposableEffect(context, state) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == RESTART_PLAY_ACTION) {
+                    state.restartCurrentPlayback()
+                }
+            }
+        }
+
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(RESTART_PLAY_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+
+        onDispose {
+            runCatching { context.unregisterReceiver(receiver) }
+        }
+    }
+
+    return state
 }
+
+private const val RESTART_PLAY_ACTION = "top.yogiczy.mytv.tv.RESTART_PLAY"

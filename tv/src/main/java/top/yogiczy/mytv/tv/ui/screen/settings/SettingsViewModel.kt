@@ -419,6 +419,33 @@ class SettingsViewModel : ViewModel() {
             afterSetWhenCloudSyncAutoPull()
         }
 
+    private var _liveNetworkProxyEnable by mutableStateOf(false)
+    var liveNetworkProxyEnable: Boolean
+        get() = _liveNetworkProxyEnable
+        set(value) {
+            _liveNetworkProxyEnable = value
+            Configs.liveNetworkProxyEnable = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _liveNetworkProxyHost by mutableStateOf("")
+    var liveNetworkProxyHost: String
+        get() = _liveNetworkProxyHost
+        set(value) {
+            Configs.liveNetworkProxyHost = value
+            _liveNetworkProxyHost = Configs.liveNetworkProxyHost
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _liveNetworkProxyPort by mutableIntStateOf(0)
+    var liveNetworkProxyPort: Int
+        get() = _liveNetworkProxyPort
+        set(value) {
+            Configs.liveNetworkProxyPort = value
+            _liveNetworkProxyPort = Configs.liveNetworkProxyPort
+            afterSetWhenCloudSyncAutoPull()
+        }
+
     private var _videoPlayerCore by mutableStateOf(Configs.VideoPlayerCore.MEDIA3)
     var videoPlayerCore: Configs.VideoPlayerCore
         get() = _videoPlayerCore
@@ -499,6 +526,204 @@ class SettingsViewModel : ViewModel() {
             Configs.videoPlayerSkipMultipleFramesOnSameVSync = value
             afterSetWhenCloudSyncAutoPull()
         }
+
+    private var _captionerEnabled by mutableStateOf(false)
+    var captionerEnabled: Boolean
+        get() = _captionerEnabled
+        set(value) {
+            _captionerEnabled = value
+            Configs.captionerEnabled = value
+            if (value && videoPlayerCore != Configs.VideoPlayerCore.MEDIA3) {
+                videoPlayerCore = Configs.VideoPlayerCore.MEDIA3
+            }
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerServerUrl by mutableStateOf("")
+    var captionerServerUrl: String
+        get() = _captionerServerUrl
+        set(value) {
+            Configs.captionerServerUrl = value
+            _captionerServerUrl = Configs.captionerServerUrl
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerSourceLanguage by mutableStateOf("auto")
+    var captionerSourceLanguage: String
+        get() = _captionerSourceLanguage
+        set(value) {
+            Configs.captionerSourceLanguage = value
+            _captionerSourceLanguage = Configs.captionerSourceLanguage
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerTargetLanguage by mutableStateOf("Chinese")
+    var captionerTargetLanguage: String
+        get() = _captionerTargetLanguage
+        set(value) {
+            Configs.captionerTargetLanguage = value
+            _captionerTargetLanguage = Configs.captionerTargetLanguage
+            _captionerChineseScript = Configs.captionerChineseScript
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerChineseScript by mutableStateOf("simplified")
+    var captionerChineseScript: String
+        get() = _captionerChineseScript
+        set(value) {
+            Configs.captionerChineseScript = value
+            _captionerChineseScript = Configs.captionerChineseScript
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerBilingualEnabled by mutableStateOf(true)
+    var captionerBilingualEnabled: Boolean
+        get() = _captionerBilingualEnabled
+        set(value) {
+            _captionerBilingualEnabled = value
+            Configs.captionerBilingualEnabled = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerAsrModel by mutableStateOf("")
+    var captionerAsrModel: String
+        get() = _captionerAsrModel
+        set(value) {
+            Configs.captionerAsrModel = value
+            _captionerAsrModel = Configs.captionerAsrModel
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerTranslationModel by mutableStateOf("")
+    var captionerTranslationModel: String
+        get() = _captionerTranslationModel
+        set(value) {
+            Configs.captionerTranslationModel = value
+            _captionerTranslationModel = Configs.captionerTranslationModel
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerChunkDurationMs by mutableLongStateOf(0L)
+    var captionerChunkDurationMs: Long
+        get() = _captionerChunkDurationMs
+        set(value) {
+            Configs.captionerChunkDurationMs = value
+            _captionerChunkDurationMs = Configs.captionerChunkDurationMs
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerPartialBeamSize by mutableIntStateOf(1)
+    var captionerPartialBeamSize: Int
+        get() = _captionerPartialBeamSize
+        set(value) {
+            Configs.captionerPartialBeamSize = value
+            _captionerPartialBeamSize = Configs.captionerPartialBeamSize
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerFinalBeamSize by mutableIntStateOf(3)
+    var captionerFinalBeamSize: Int
+        get() = _captionerFinalBeamSize
+        set(value) {
+            Configs.captionerFinalBeamSize = value
+            _captionerFinalBeamSize = Configs.captionerFinalBeamSize
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerDisplayDurationMs by mutableLongStateOf(0L)
+    var captionerDisplayDurationMs: Long
+        get() = _captionerDisplayDurationMs
+        set(value) {
+            Configs.captionerDisplayDurationMs = value
+            _captionerDisplayDurationMs = Configs.captionerDisplayDurationMs
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerTextColor by mutableStateOf(Configs.CaptionerTextColor.WHITE)
+    var captionerTextColor: Configs.CaptionerTextColor
+        get() = _captionerTextColor
+        set(value) {
+            _captionerTextColor = value
+            Configs.captionerTextColor = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerBackgroundColor by mutableStateOf(Configs.CaptionerBackgroundColor.BLACK)
+    var captionerBackgroundColor: Configs.CaptionerBackgroundColor
+        get() = _captionerBackgroundColor
+        set(value) {
+            _captionerBackgroundColor = value
+            Configs.captionerBackgroundColor = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerPosition by mutableStateOf(Configs.CaptionerPosition.BOTTOM)
+    var captionerPosition: Configs.CaptionerPosition
+        get() = _captionerPosition
+        set(value) {
+            _captionerPosition = value
+            Configs.captionerPosition = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerOffsetX by mutableIntStateOf(0)
+    var captionerOffsetX: Int
+        get() = _captionerOffsetX
+        set(value) {
+            Configs.captionerOffsetX = value
+            _captionerOffsetX = Configs.captionerOffsetX
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerOffsetY by mutableIntStateOf(0)
+    var captionerOffsetY: Int
+        get() = _captionerOffsetY
+        set(value) {
+            Configs.captionerOffsetY = value
+            _captionerOffsetY = Configs.captionerOffsetY
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerTextAlign by mutableStateOf(Configs.CaptionerTextAlign.CENTER)
+    var captionerTextAlign: Configs.CaptionerTextAlign
+        get() = _captionerTextAlign
+        set(value) {
+            _captionerTextAlign = value
+            Configs.captionerTextAlign = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerSingleLineMode by mutableStateOf(false)
+    var captionerSingleLineMode: Boolean
+        get() = _captionerSingleLineMode
+        set(value) {
+            _captionerSingleLineMode = value
+            Configs.captionerSingleLineMode = value
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerPrimaryFontSize by mutableIntStateOf(26)
+    var captionerPrimaryFontSize: Int
+        get() = _captionerPrimaryFontSize
+        set(value) {
+            Configs.captionerPrimaryFontSize = value
+            _captionerPrimaryFontSize = Configs.captionerPrimaryFontSize
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    private var _captionerSecondaryFontSize by mutableIntStateOf(18)
+    var captionerSecondaryFontSize: Int
+        get() = _captionerSecondaryFontSize
+        set(value) {
+            Configs.captionerSecondaryFontSize = value
+            _captionerSecondaryFontSize = Configs.captionerSecondaryFontSize
+            afterSetWhenCloudSyncAutoPull()
+        }
+
+    fun resetCaptionerOffset() {
+        captionerOffsetX = 0
+        captionerOffsetY = 0
+    }
 
     private var _themeAppCurrent by mutableStateOf<AppThemeDef?>(null)
     var themeAppCurrent: AppThemeDef?
@@ -666,6 +891,9 @@ class SettingsViewModel : ViewModel() {
         _uiScreenAutoCloseDelay = Configs.uiScreenAutoCloseDelay
         _updateForceRemind = Configs.updateForceRemind
         _updateChannel = Configs.updateChannel
+        _liveNetworkProxyEnable = Configs.liveNetworkProxyEnable
+        _liveNetworkProxyHost = Configs.liveNetworkProxyHost
+        _liveNetworkProxyPort = Configs.liveNetworkProxyPort
         _videoPlayerCore = Configs.videoPlayerCore
         _videoPlayerRenderMode = Configs.videoPlayerRenderMode
         _videoPlayerUserAgent = Configs.videoPlayerUserAgent
@@ -675,6 +903,27 @@ class SettingsViewModel : ViewModel() {
         _videoPlayerForceAudioSoftDecode = Configs.videoPlayerForceAudioSoftDecode
         _videoPlayerStopPreviousMediaItem = Configs.videoPlayerStopPreviousMediaItem
         _videoPlayerSkipMultipleFramesOnSameVSync = Configs.videoPlayerSkipMultipleFramesOnSameVSync
+        _captionerEnabled = Configs.captionerEnabled
+        _captionerServerUrl = Configs.captionerServerUrl
+        _captionerSourceLanguage = Configs.captionerSourceLanguage
+        _captionerTargetLanguage = Configs.captionerTargetLanguage
+        _captionerChineseScript = Configs.captionerChineseScript
+        _captionerBilingualEnabled = Configs.captionerBilingualEnabled
+        _captionerAsrModel = Configs.captionerAsrModel
+        _captionerTranslationModel = Configs.captionerTranslationModel
+        _captionerChunkDurationMs = Configs.captionerChunkDurationMs
+        _captionerPartialBeamSize = Configs.captionerPartialBeamSize
+        _captionerFinalBeamSize = Configs.captionerFinalBeamSize
+        _captionerDisplayDurationMs = Configs.captionerDisplayDurationMs
+        _captionerTextColor = Configs.captionerTextColor
+        _captionerBackgroundColor = Configs.captionerBackgroundColor
+        _captionerPosition = Configs.captionerPosition
+        _captionerOffsetX = Configs.captionerOffsetX
+        _captionerOffsetY = Configs.captionerOffsetY
+        _captionerTextAlign = Configs.captionerTextAlign
+        _captionerSingleLineMode = Configs.captionerSingleLineMode
+        _captionerPrimaryFontSize = Configs.captionerPrimaryFontSize
+        _captionerSecondaryFontSize = Configs.captionerSecondaryFontSize
         _themeAppCurrent = Configs.themeAppCurrent
         _cloudSyncAutoPull = Configs.cloudSyncAutoPull
         _cloudSyncProvider = Configs.cloudSyncProvider

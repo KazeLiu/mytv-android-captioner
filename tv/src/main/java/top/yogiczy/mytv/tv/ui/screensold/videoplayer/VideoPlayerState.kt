@@ -18,6 +18,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import top.yogiczy.mytv.core.data.entities.channel.ChannelLine
 import top.yogiczy.mytv.tv.ui.screen.settings.settingsVM
+import top.yogiczy.mytv.tv.ui.screensold.videoplayer.captioner.LiveCaptionController
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.IjkVideoPlayer
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.Media3VideoPlayer
 import top.yogiczy.mytv.tv.ui.screensold.videoplayer.player.VideoPlayer
@@ -26,6 +27,8 @@ import top.yogiczy.mytv.tv.ui.utils.Configs
 @Stable
 class VideoPlayerState(
     val instance: VideoPlayer,
+    private val captionController: LiveCaptionController? = null,
+    private val captionItemsProvider: () -> List<LiveCaptionController.SubtitleItem> = { emptyList() },
     private var defaultDisplayModeProvider: () -> VideoPlayerDisplayMode = { VideoPlayerDisplayMode.ORIGINAL },
 ) {
     /** 显示模式 */
@@ -61,9 +64,14 @@ class VideoPlayerState(
     /** 元数据 */
     var metadata by mutableStateOf(VideoPlayer.Metadata())
 
+    /** AI 字幕 */
+    val captionItems: List<LiveCaptionController.SubtitleItem>
+        get() = captionItemsProvider()
+
     fun prepare(line: ChannelLine) {
         error = null
         metadata = VideoPlayer.Metadata()
+        captionController?.start()
         instance.prepare(line)
     }
 
@@ -80,6 +88,7 @@ class VideoPlayerState(
     }
 
     fun stop() {
+        captionController?.stop()
         instance.stop()
     }
 
@@ -157,6 +166,7 @@ class VideoPlayerState(
         onErrorListeners.clear()
         onInterruptListeners.clear()
         onIsBufferingListeners.clear()
+        captionController?.stop()
         instance.release()
     }
 }
@@ -170,13 +180,31 @@ fun rememberVideoPlayerState(
     val coroutineScope = rememberCoroutineScope()
 
     val videoPlayerCore = settingsVM.videoPlayerCore
+    val captionItemsState = remember(videoPlayerCore) {
+        mutableStateOf<List<LiveCaptionController.SubtitleItem>>(emptyList())
+    }
     val state = remember(videoPlayerCore) {
+        val captionController = if (videoPlayerCore == Configs.VideoPlayerCore.MEDIA3) {
+            LiveCaptionController(coroutineScope) { captionItemsState.value = it }
+        } else {
+            null
+        }
+
         val player = when (videoPlayerCore) {
-            Configs.VideoPlayerCore.MEDIA3 -> Media3VideoPlayer(context, coroutineScope)
+            Configs.VideoPlayerCore.MEDIA3 -> Media3VideoPlayer(
+                context,
+                coroutineScope,
+                captionController,
+            )
             Configs.VideoPlayerCore.IJK -> IjkVideoPlayer(context, coroutineScope)
         }
 
-        VideoPlayerState(player, defaultDisplayModeProvider)
+        VideoPlayerState(
+            instance = player,
+            captionController = captionController,
+            captionItemsProvider = { captionItemsState.value },
+            defaultDisplayModeProvider = defaultDisplayModeProvider,
+        )
     }
 
     DisposableEffect(videoPlayerCore) {
